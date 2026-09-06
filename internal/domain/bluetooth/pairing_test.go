@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"settings-cli/internal/domain/bluetooth"
+	"knob/internal/domain/bluetooth"
 )
 
 func TestPasskey(t *testing.T) {

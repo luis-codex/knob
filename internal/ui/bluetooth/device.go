@@ -8,8 +8,8 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"settings-cli/internal/shared/components"
-	"settings-cli/internal/shared/styles"
+	"knob/internal/shared/components"
+	"knob/internal/shared/styles"
 )
 
 // nameColumn is the width reserved for the name; the rest is left for kind and

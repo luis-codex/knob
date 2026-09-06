@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"settings-cli/internal/domain/bluetooth"
-	"settings-cli/internal/domain/errs"
+	"knob/internal/domain/bluetooth"
+	"knob/internal/domain/errs"
 )
 
 func mustDevice(t *testing.T) bluetooth.Device {

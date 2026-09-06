@@ -1,4 +1,4 @@
-module settings-cli
+module knob
 
 go 1.27.0
 

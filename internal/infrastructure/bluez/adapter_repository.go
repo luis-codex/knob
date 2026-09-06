@@ -3,7 +3,7 @@ package bluez
 import (
 	"context"
 
-	"settings-cli/internal/domain/bluetooth"
+	"knob/internal/domain/bluetooth"
 )
 
 // AdapterRepository reads and changes the state of the real radio.

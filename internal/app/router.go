@@ -3,11 +3,11 @@ package app
 import (
 	"context"
 
-	"settings-cli/internal/application/devices"
-	"settings-cli/internal/application/sound"
-	"settings-cli/internal/pages"
-	"settings-cli/internal/shared/components"
-	"settings-cli/internal/shared/layouts"
+	"knob/internal/application/devices"
+	"knob/internal/application/sound"
+	"knob/internal/pages"
+	"knob/internal/shared/components"
+	"knob/internal/shared/layouts"
 )
 
 // Navigation IDs: the key that ties the sidebar and the router together.

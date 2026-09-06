@@ -5,7 +5,7 @@ labels: enhancement
 ---
 
 **Problem**
-What are you trying to do that settings-cli makes hard or impossible today?
+What are you trying to do that knob makes hard or impossible today?
 
 **Proposed solution**
 What you would like it to do.

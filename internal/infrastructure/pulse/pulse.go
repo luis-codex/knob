@@ -14,8 +14,8 @@ import (
 	"strconv"
 	"strings"
 
-	"settings-cli/internal/domain/audio"
-	"settings-cli/internal/domain/errs"
+	"knob/internal/domain/audio"
+	"knob/internal/domain/errs"
 )
 
 // binary is the executable that gets invoked. A variable so it can be swapped

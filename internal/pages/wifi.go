@@ -1,7 +1,7 @@
 package pages
 
 import (
-	"settings-cli/internal/shared/styles"
+	"knob/internal/shared/styles"
 )
 
 // wifiNote warns that the screen does not manage anything yet. It goes away

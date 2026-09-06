@@ -21,12 +21,12 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/BurntSushi/toml"
 
-	"settings-cli/internal/shared/styles"
+	"knob/internal/shared/styles"
 )
 
 const (
 	// appDir is the folder under the user's config directory.
-	appDir = "settings-cli"
+	appDir = "knob"
 	// themeFile is the theme file inside that folder.
 	themeFile = "theme.toml"
 )
@@ -147,7 +147,7 @@ func toPalette(section string, p palette) (styles.Palette, []error) {
 // exampleTheme is the template written by WriteExampleTheme. It carries every
 // color commented out with its default value: that way you can see what is
 // tunable without reading the code.
-const exampleTheme = `# settings-cli theme.
+const exampleTheme = `# knob theme.
 #
 # Uncomment only what you want to change: anything missing stays at the default
 # value. Colors are hexadecimal, #RGB or #RRGGBB.

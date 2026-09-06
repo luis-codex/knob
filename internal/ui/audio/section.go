@@ -5,8 +5,8 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"settings-cli/internal/shared/components"
-	"settings-cli/internal/shared/styles"
+	"knob/internal/shared/components"
+	"knob/internal/shared/styles"
 )
 
 // Section is a list with a heading inside the sound screen.

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"settings-cli/internal/application/devices"
-	"settings-cli/internal/domain/bluetooth"
-	"settings-cli/internal/domain/errs"
-	"settings-cli/internal/infrastructure/memory"
-	"settings-cli/internal/infrastructure/simulated"
+	"knob/internal/application/devices"
+	"knob/internal/domain/bluetooth"
+	"knob/internal/domain/errs"
+	"knob/internal/infrastructure/memory"
+	"knob/internal/infrastructure/simulated"
 )
 
 const (

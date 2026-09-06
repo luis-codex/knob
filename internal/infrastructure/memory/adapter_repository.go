@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"settings-cli/internal/domain/bluetooth"
+	"knob/internal/domain/bluetooth"
 )
 
 // AdapterRepository implements bluetooth.AdapterRepository. It holds a single

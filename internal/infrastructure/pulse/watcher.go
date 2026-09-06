@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"settings-cli/internal/domain/audio"
-	"settings-cli/internal/domain/errs"
+	"knob/internal/domain/audio"
+	"knob/internal/domain/errs"
 )
 
 // watched is the set of objects whose events trigger a re-read.

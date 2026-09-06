@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"settings-cli/internal/domain/audio"
-	"settings-cli/internal/domain/errs"
+	"knob/internal/domain/audio"
+	"knob/internal/domain/errs"
 )
 
 func mustDevice(t *testing.T, level int, muted bool) audio.Device {

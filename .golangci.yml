@@ -23,4 +23,4 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - settings-cli
+        - knob

@@ -3,8 +3,8 @@ package components
 import (
 	"charm.land/lipgloss/v2"
 
-	"settings-cli/internal/shared/styles"
-	"settings-cli/internal/shared/ui"
+	"knob/internal/shared/styles"
+	"knob/internal/shared/ui"
 )
 
 // List is a navigable, scrolling list. It keeps the cursor and offset; the row

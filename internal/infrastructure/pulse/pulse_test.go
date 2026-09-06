@@ -3,7 +3,7 @@ package pulse
 import (
 	"testing"
 
-	"settings-cli/internal/domain/audio"
+	"knob/internal/domain/audio"
 )
 
 // Real output of `pactl -f json list sinks`, trimmed.

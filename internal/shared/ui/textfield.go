@@ -3,7 +3,7 @@ package ui
 import (
 	"github.com/charmbracelet/x/ansi"
 
-	"settings-cli/internal/shared/styles"
+	"knob/internal/shared/styles"
 )
 
 // TextFieldOpts configures a text field. The buffer and focus are kept by

@@ -1,8 +1,8 @@
 package components
 
 import (
-	"settings-cli/internal/shared/styles"
-	"settings-cli/internal/shared/ui"
+	"knob/internal/shared/styles"
+	"knob/internal/shared/ui"
 )
 
 // Footer shows the keys available in the current context.

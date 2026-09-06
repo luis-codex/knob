@@ -5,8 +5,8 @@ import (
 	"context"
 	"strings"
 
-	"settings-cli/internal/domain/bluetooth"
-	"settings-cli/internal/domain/errs"
+	"knob/internal/domain/bluetooth"
+	"knob/internal/domain/errs"
 )
 
 // Repository exposes the devices BlueZ knows about.

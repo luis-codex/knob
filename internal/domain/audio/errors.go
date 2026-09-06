@@ -3,7 +3,7 @@ package audio
 import (
 	"fmt"
 
-	"settings-cli/internal/domain/errs"
+	"knob/internal/domain/errs"
 )
 
 // Domain errors. They are compared with errors.Is and carry an errs.Kind

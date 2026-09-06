@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"settings-cli/internal/domain/bluetooth"
+	"knob/internal/domain/bluetooth"
 )
 
 // Scanner always returns the same set of devices. Deduplicating against what

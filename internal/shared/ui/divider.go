@@ -3,7 +3,7 @@ package ui
 import (
 	"strings"
 
-	"settings-cli/internal/shared/styles"
+	"knob/internal/shared/styles"
 )
 
 // HDivider draws a horizontal line of the given width.

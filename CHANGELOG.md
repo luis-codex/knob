@@ -21,6 +21,8 @@ may change between minor releases.
   (GPL-3.0-or-later).
 
 ### Changed
+- Renamed the project and binary to **`knob`** (module `knob`, command `knob`,
+  config directory `~/.config/knob/`).
 - All code comments, doc strings and user-facing text translated to English.
 - `Makefile`: build now injects version metadata and uses `-trimpath` /
   `CGO_ENABLED=0`; added `test`, `vet`, `lint`, `check` and `snapshot` targets.
@@ -29,4 +31,4 @@ may change between minor releases.
 - Dead helpers in `internal/pages` (unused text/column helpers) flagged by
   `golangci-lint`.
 
-[Unreleased]: https://github.com/luis-codex/settings-cli/commits/main
+[Unreleased]: https://github.com/luis-codex/knob/commits/main

@@ -3,16 +3,16 @@
 # Real release:                   push a vX.Y.Z tag  (.github/workflows/release.yml)
 version: 2
 
-project_name: settings-cli
+project_name: knob
 
 before:
   hooks:
     - go mod tidy
 
 builds:
-  - id: settings
-    main: ./cmd/settings
-    binary: settings
+  - id: knob
+    main: ./cmd/knob
+    binary: knob
     env:
       - CGO_ENABLED=0
     flags:
@@ -31,7 +31,7 @@ builds:
       - arm64
 
 archives:
-  - id: settings
+  - id: knob
     formats:
       - tar.gz
     name_template: >-
@@ -45,10 +45,10 @@ checksum:
   name_template: checksums.txt
 
 nfpms:
-  - id: settings
-    package_name: settings-cli
+  - id: knob
+    package_name: knob
     vendor: Luis Tenorio
-    homepage: https://github.com/luis-codex/settings-cli
+    homepage: https://github.com/luis-codex/knob
     maintainer: Luis Tenorio <luisprograming0@gmail.com>
     description: System settings (audio, Bluetooth, network) in a TUI.
     license: GPL-3.0-or-later
@@ -60,9 +60,9 @@ nfpms:
       - archlinux
     contents:
       - src: LICENSE
-        dst: /usr/share/licenses/settings-cli/LICENSE
+        dst: /usr/share/licenses/knob/LICENSE
       - src: README.md
-        dst: /usr/share/doc/settings-cli/README.md
+        dst: /usr/share/doc/knob/README.md
 
 changelog:
   sort: asc
@@ -89,7 +89,7 @@ changelog:
 release:
   github:
     owner: luis-codex
-    name: settings-cli
+    name: knob
   draft: false
   # A tag with a hyphen (v0.1.0-beta.1) is flagged as a prerelease automatically.
   prerelease: auto
@@ -101,20 +101,20 @@ snapshot:
 #
 # AUR: needs an SSH key pair and the AUR git repo.
 # aurs:
-#   - name: settings-cli-bin
-#     homepage: https://github.com/luis-codex/settings-cli
+#   - name: knob-bin
+#     homepage: https://github.com/luis-codex/knob
 #     description: System settings in a TUI.
 #     maintainers:
 #       - Luis Tenorio <luisprograming0@gmail.com>
 #     license: GPL-3.0-or-later
 #     private_key: "{{ .Env.AUR_KEY }}"
-#     git_url: ssh://aur@aur.archlinux.org/settings-cli-bin.git
+#     git_url: ssh://aur@aur.archlinux.org/knob-bin.git
 #
 # Homebrew: needs a homebrew-tap repo and a token with write access.
 # brews:
 #   - repository:
 #       owner: luis-codex
 #       name: homebrew-tap
-#     homepage: https://github.com/luis-codex/settings-cli
+#     homepage: https://github.com/luis-codex/knob
 #     description: System settings in a TUI.
 #     license: GPL-3.0-or-later

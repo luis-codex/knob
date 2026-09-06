@@ -1,6 +1,6 @@
 package ui
 
-import "settings-cli/internal/shared/styles"
+import "knob/internal/shared/styles"
 
 // ScrollOffset adjusts prev so that cursor lands inside the window, moving the
 // minimum. It requires remembering the offset between renders, in exchange for

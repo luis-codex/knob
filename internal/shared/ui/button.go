@@ -3,7 +3,7 @@ package ui
 import (
 	"strings"
 
-	"settings-cli/internal/shared/styles"
+	"knob/internal/shared/styles"
 )
 
 // ButtonOpts configures a button. Focus is kept by whoever draws it.

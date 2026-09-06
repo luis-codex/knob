@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"settings-cli/internal/domain/audio"
-	"settings-cli/internal/domain/errs"
+	"knob/internal/domain/audio"
+	"knob/internal/domain/errs"
 )
 
 // Repository exposes the server's sound devices.

@@ -11,7 +11,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"settings-cli/internal/shared/styles"
+	"knob/internal/shared/styles"
 )
 
 // frameChrome is the rows frame adds on its own: the title, the rule that

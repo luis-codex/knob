@@ -8,7 +8,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"settings-cli/internal/shared/icons"
+	"knob/internal/shared/icons"
 )
 
 // Spacing and size tokens: the app's visual rhythm.

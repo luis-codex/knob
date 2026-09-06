@@ -6,13 +6,13 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"settings-cli/internal/application/sound"
-	"settings-cli/internal/domain/audio"
-	"settings-cli/internal/shared/components"
-	"settings-cli/internal/shared/icons"
-	"settings-cli/internal/shared/styles"
-	"settings-cli/internal/shared/ui"
-	audioui "settings-cli/internal/ui/audio"
+	"knob/internal/application/sound"
+	"knob/internal/domain/audio"
+	"knob/internal/shared/components"
+	"knob/internal/shared/icons"
+	"knob/internal/shared/styles"
+	"knob/internal/shared/ui"
+	audioui "knob/internal/ui/audio"
 )
 
 const (

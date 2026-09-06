@@ -3,8 +3,8 @@ package ui
 import (
 	"strings"
 
-	"settings-cli/internal/shared/icons"
-	"settings-cli/internal/shared/styles"
+	"knob/internal/shared/icons"
+	"knob/internal/shared/styles"
 )
 
 // Key is a keyboard hint: the key and what it does.

@@ -1,15 +1,15 @@
 # Contributing
 
-Thanks for your interest in settings-cli. This is a beta project — bug reports,
+Thanks for your interest in knob. This is a beta project — bug reports,
 small fixes and feedback on the UX are all welcome.
 
 ## Getting started
 
 ```sh
-git clone https://github.com/luis-codex/settings-cli
-cd settings-cli
+git clone https://github.com/luis-codex/knob
+cd knob
 make dev                                  # run the TUI from source
-go run ./cmd/settings -fake-bluetooth      # run with seeded fake devices
+go run ./cmd/knob -fake-bluetooth      # run with seeded fake devices
 ```
 
 `-fake-bluetooth` seeds example devices so you can work on the Bluetooth screen
@@ -44,10 +44,10 @@ internal/
   infrastructure/  adapters that implement the ports (bluez, pulse, memory, simulated).
   config/          reads user config and translates it to UI vocabulary.
   app/, pages/, shared/, ui/   the Bubble Tea model, screens and widgets.
-cmd/settings/      composition root: wires concrete adapters to use cases.
+cmd/knob/      composition root: wires concrete adapters to use cases.
 ```
 
-The `cmd/settings/main.go` composition root is the only place that names
+The `cmd/knob/main.go` composition root is the only place that names
 concrete implementations. Swapping a backend is changing those lines.
 
 ## License

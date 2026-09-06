@@ -1,6 +1,6 @@
 package pages
 
-import "settings-cli/internal/shared/styles"
+import "knob/internal/shared/styles"
 
 // Fallback is not a menu entry: it covers an unknown navigation identifier so
 // the layout never gets a nil page.

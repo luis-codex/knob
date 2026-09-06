@@ -7,14 +7,14 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"settings-cli/internal/application/devices"
-	"settings-cli/internal/application/sound"
-	"settings-cli/internal/pages"
-	"settings-cli/internal/shared/components"
-	"settings-cli/internal/shared/icons"
-	"settings-cli/internal/shared/layouts"
-	"settings-cli/internal/shared/styles"
-	"settings-cli/internal/shared/ui"
+	"knob/internal/application/devices"
+	"knob/internal/application/sound"
+	"knob/internal/pages"
+	"knob/internal/shared/components"
+	"knob/internal/shared/icons"
+	"knob/internal/shared/layouts"
+	"knob/internal/shared/styles"
+	"knob/internal/shared/ui"
 )
 
 // Optional page contracts. Unexported: declared by whoever consumes them.

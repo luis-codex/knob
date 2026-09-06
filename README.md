@@ -1,8 +1,8 @@
-# settings-cli
+# knob
 
 System settings — audio, Bluetooth, network — in a terminal UI.
 
-`settings` is a keyboard-driven TUI for Linux that shows and changes what your
+`knob` is a keyboard-driven TUI for Linux that shows and changes what your
 system is actually doing: output/input volume and devices via PulseAudio /
 PipeWire, Bluetooth devices via BlueZ, and (soon) network via NetworkManager or
 iwd. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and
@@ -27,12 +27,12 @@ iwd. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and
 ### Prebuilt binary (recommended)
 
 Download the archive for your architecture from the
-[latest release](https://github.com/luis-codex/settings-cli/releases/latest),
+[latest release](https://github.com/luis-codex/knob/releases/latest),
 then:
 
 ```sh
-tar -xzf settings-cli_*_linux_amd64.tar.gz
-install -Dm755 settings ~/.local/bin/settings   # or /usr/local/bin with sudo
+tar -xzf knob_*_linux_amd64.tar.gz
+install -Dm755 knob ~/.local/bin/knob   # or /usr/local/bin with sudo
 ```
 
 Native packages (`.deb`, `.rpm`, Arch `.pkg.tar.zst`) are attached to each
@@ -41,8 +41,8 @@ release as well.
 ### From source
 
 ```sh
-git clone https://github.com/luis-codex/settings-cli
-cd settings-cli
+git clone https://github.com/luis-codex/knob
+cd knob
 make install        # builds with version info and installs to $GOBIN or $GOPATH/bin
 ```
 
@@ -51,22 +51,22 @@ Make sure that directory is on your `PATH`.
 ## Uninstall
 
 ```sh
-make uninstall                  # removes the binary from $GOBIN / $GOPATH/bin
-rm -rf ~/.config/settings-cli   # optional: also remove your theme/config
+make uninstall            # removes the binary from $GOBIN / $GOPATH/bin
+rm -rf ~/.config/knob     # optional: also remove your theme/config
 ```
 
 If you installed a prebuilt binary manually, just delete it
-(`rm ~/.local/bin/settings`). Native packages uninstall with your package
-manager (`apt remove settings-cli`, `pacman -R settings-cli`, …).
+(`rm ~/.local/bin/knob`). Native packages uninstall with your package manager
+(`apt remove knob`, `pacman -R knob`, …).
 
 ## Usage
 
 ```
-settings              open the settings
-settings -write-theme  drop an example theme in ~/.config/settings-cli/
-settings -fake-bluetooth  use fake devices (development, no hardware needed)
-settings -version     print version, commit and build date
-settings -h           full help
+knob              open the settings
+knob -write-theme  drop an example theme in ~/.config/knob/
+knob -fake-bluetooth  use fake devices (development, no hardware needed)
+knob -version     print version, commit and build date
+knob -h           full help
 ```
 
 ### Keys
@@ -83,12 +83,11 @@ Each screen shows its own extra keys in the footer.
 
 ### Configuration
 
-`settings` reads an optional theme from
-`$XDG_CONFIG_HOME/settings-cli/theme.toml` (usually
-`~/.config/settings-cli/theme.toml`). Run `settings -write-theme` to drop a
-commented template with every color and its default; uncomment only what you
-want to change. An invalid theme never blocks startup — bad values are reported
-on stderr and the defaults are used.
+`knob` reads an optional theme from `$XDG_CONFIG_HOME/knob/theme.toml` (usually
+`~/.config/knob/theme.toml`). Run `knob -write-theme` to drop a commented
+template with every color and its default; uncomment only what you want to
+change. An invalid theme never blocks startup — bad values are reported on
+stderr and the defaults are used.
 
 ### Exit codes
 
@@ -119,8 +118,8 @@ versioning stability guarantees start at `1.0.0`.
 
 ## Reporting bugs
 
-Open an issue: <https://github.com/luis-codex/settings-cli/issues>. Please
-include your distro, terminal, `settings -version`, and how to reproduce it.
+Open an issue: <https://github.com/luis-codex/knob/issues>. Please include your
+distro, terminal, `knob -version`, and how to reproduce it.
 
 ## License
 

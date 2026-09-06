@@ -2,14 +2,14 @@
 
 ## Supported versions
 
-settings-cli is in beta. Only the latest release (and `main`) receives fixes.
+knob is in beta. Only the latest release (and `main`) receives fixes.
 
 ## Reporting a vulnerability
 
 Please **do not** open a public issue for security problems.
 
 Use GitHub's private reporting instead:
-<https://github.com/luis-codex/settings-cli/security/advisories/new>, or email
+<https://github.com/luis-codex/knob/security/advisories/new>, or email
 the maintainer at luisprograming0@gmail.com with a description and, if possible,
 a reproduction.
 

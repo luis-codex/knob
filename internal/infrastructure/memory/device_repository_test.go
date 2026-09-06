@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"settings-cli/internal/domain/bluetooth"
-	"settings-cli/internal/infrastructure/memory"
+	"knob/internal/domain/bluetooth"
+	"knob/internal/infrastructure/memory"
 )
 
 func newDevice(t *testing.T, address, name string) bluetooth.Device {

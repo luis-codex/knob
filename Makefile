@@ -1,5 +1,5 @@
-BINARY  := settings
-CMD     := ./cmd/settings
+BINARY  := knob
+CMD     := ./cmd/knob
 BIN_DIR := bin
 
 GO      ?= go
@@ -50,7 +50,7 @@ install:
 theme:
 	$(GO) run $(CMD) -write-theme
 
-## uninstall: remove settings from the PATH (config in ~/.config/settings-cli/ is left alone)
+## uninstall: remove knob from the PATH (config in ~/.config/knob/ is left alone)
 .PHONY: uninstall
 uninstall:
 	@if [ -f "$(GOBIN_DIR)/$(BINARY)" ]; then \
@@ -59,7 +59,7 @@ uninstall:
 	else \
 		echo "nothing installed at $(GOBIN_DIR)"; \
 	fi
-	@echo "to drop the config:  rm -rf ~/.config/settings-cli"
+	@echo "to drop the config:  rm -rf ~/.config/knob"
 
 ## test: run the tests with the race detector
 .PHONY: test

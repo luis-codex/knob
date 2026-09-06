@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"settings-cli/internal/domain/bluetooth"
+	"knob/internal/domain/bluetooth"
 )
 
 // Real output of `bluetoothctl info` for a connected headset.

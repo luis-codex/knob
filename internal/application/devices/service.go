@@ -12,7 +12,7 @@ import (
 	"errors"
 	"strings"
 
-	"settings-cli/internal/domain/bluetooth"
+	"knob/internal/domain/bluetooth"
 )
 
 // transition is an aggregate operation that returns the resulting device. It

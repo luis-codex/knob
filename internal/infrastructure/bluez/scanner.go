@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"settings-cli/internal/domain/bluetooth"
+	"knob/internal/domain/bluetooth"
 )
 
 // Scanner asks BlueZ to look for devices for a while.

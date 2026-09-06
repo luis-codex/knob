@@ -5,7 +5,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"settings-cli/internal/shared/styles"
+	"knob/internal/shared/styles"
 )
 
 // Header is the top bar: the application name and, on the right, the section
@@ -16,7 +16,7 @@ type Header struct {
 }
 
 func NewHeader() Header {
-	return Header{Name: "settings"}
+	return Header{Name: "knob"}
 }
 
 // WithSection returns a copy noting where the user is.

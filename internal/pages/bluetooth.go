@@ -6,15 +6,15 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"settings-cli/internal/application/devices"
-	"settings-cli/internal/domain/bluetooth"
-	"settings-cli/internal/domain/errs"
-	"settings-cli/internal/shared/components"
-	"settings-cli/internal/shared/icons"
-	"settings-cli/internal/shared/layouts"
-	"settings-cli/internal/shared/styles"
-	"settings-cli/internal/shared/ui"
-	btui "settings-cli/internal/ui/bluetooth"
+	"knob/internal/application/devices"
+	"knob/internal/domain/bluetooth"
+	"knob/internal/domain/errs"
+	"knob/internal/shared/components"
+	"knob/internal/shared/icons"
+	"knob/internal/shared/layouts"
+	"knob/internal/shared/styles"
+	"knob/internal/shared/ui"
+	btui "knob/internal/ui/bluetooth"
 )
 
 // developmentNote warns about what this screen does not do yet. It goes away

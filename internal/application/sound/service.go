@@ -10,7 +10,7 @@ package sound
 import (
 	"context"
 
-	"settings-cli/internal/domain/audio"
+	"knob/internal/domain/audio"
 )
 
 // change is an aggregate operation. It returns no error: adjusting volume or

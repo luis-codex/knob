@@ -7,8 +7,8 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"settings-cli/internal/shared/styles"
-	"settings-cli/internal/shared/ui"
+	"knob/internal/shared/styles"
+	"knob/internal/shared/ui"
 )
 
 // DialogAction is what a keypress causes in the dialog.
