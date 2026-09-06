@@ -1,8 +1,8 @@
-// Package bluez implementa los puertos de Bluetooth contra el demonio BlueZ
-// del sistema, invocando bluetoothctl.
+// Package bluez implements the Bluetooth ports against the system's BlueZ
+// daemon by invoking bluetoothctl.
 //
-// Se usa la CLI y no D-Bus directamente para no arrastrar dependencias: a
-// cambio hay que parsear texto, que es lo que hace parseFields.
+// The CLI is used rather than D-Bus directly to avoid pulling in
+// dependencies: the trade-off is parsing text, which is what parseFields does.
 package bluez
 
 import (
@@ -16,27 +16,27 @@ import (
 	"settings-cli/internal/domain/errs"
 )
 
-// binary es el ejecutable que se invoca. Variable para poder sustituirlo en
-// pruebas.
+// binary is the executable that gets invoked. A variable so it can be swapped
+// in tests.
 var binary = "bluetoothctl"
 
-// run ejecuta bluetoothctl y devuelve su salida.
+// run executes bluetoothctl and returns its output.
 //
-// bluetoothctl escribe los fallos en stdout y devuelve 0 en varios casos, así
-// que el código de salida no basta: quien llama debe mirar el contenido.
+// bluetoothctl writes failures to stdout and returns 0 in several cases, so
+// the exit code is not enough: the caller must inspect the content.
 func run(ctx context.Context, args ...string) (string, error) {
 	out, err := exec.CommandContext(ctx, binary, args...).CombinedOutput()
 	if err != nil {
 		if ctx.Err() != nil {
 			return "", ctx.Err()
 		}
-		return string(out), errs.Wrap(errs.KindConflict, "no se pudo hablar con BlueZ", err)
+		return string(out), errs.Wrap(errs.KindConflict, "could not talk to BlueZ", err)
 	}
 	return string(out), nil
 }
 
-// parseFields extrae las líneas "Clave: valor" de la salida. Las claves se
-// repiten (UUID), así que se queda con la primera, que es la que interesa.
+// parseFields extracts the "Key: value" lines from the output. Keys repeat
+// (UUID), so it keeps the first one, which is the one that matters.
 func parseFields(out string) map[string]string {
 	fields := make(map[string]string)
 
@@ -57,16 +57,16 @@ func yes(fields map[string]string, key string) bool {
 	return fields[key] == "yes"
 }
 
-// parseBattery lee "Battery Percentage: 0x52 (82)": el valor útil es el
-// decimal entre paréntesis.
+// parseBattery reads "Battery Percentage: 0x52 (82)": the useful value is the
+// decimal in parentheses.
 func parseBattery(raw string) bluetooth.Battery {
 	open := strings.Index(raw, "(")
-	close := strings.Index(raw, ")")
-	if open < 0 || close < open {
+	closeIdx := strings.Index(raw, ")")
+	if open < 0 || closeIdx < open {
 		return bluetooth.UnknownBattery()
 	}
 
-	level, err := strconv.Atoi(raw[open+1 : close])
+	level, err := strconv.Atoi(raw[open+1 : closeIdx])
 	if err != nil {
 		return bluetooth.UnknownBattery()
 	}
@@ -78,7 +78,7 @@ func parseBattery(raw string) bluetooth.Battery {
 	return battery
 }
 
-// icons traduce el icono de BlueZ al tipo del dominio.
+// icons maps the BlueZ icon to the domain kind.
 var icons = map[string]bluetooth.Kind{
 	"audio-headset":    bluetooth.KindHeadphones,
 	"audio-headphones": bluetooth.KindHeadphones,

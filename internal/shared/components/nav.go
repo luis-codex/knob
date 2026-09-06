@@ -10,37 +10,37 @@ import (
 	"settings-cli/internal/shared/ui"
 )
 
-// NavItem es una hoja del árbol y selecciona una página.
+// NavItem is a leaf of the tree and selects a page.
 type NavItem struct {
 	ID    string
 	Label string
 }
 
-// NavGroup es un encabezado con sus sub-items. No es seleccionable.
+// NavGroup is a heading with its sub-items. It is not selectable.
 type NavGroup struct {
 	Label string
 	Items []NavItem
 }
 
-// Nav es el árbol de navegación del sidebar.
+// Nav is the sidebar's navigation tree.
 type Nav struct {
 	Groups []NavGroup
-	// Focused indica si el sidebar tiene el foco del teclado.
+	// Focused reports whether the sidebar has the keyboard focus.
 	Focused bool
-	cursor  int // índice sobre la lista aplanada de items
+	cursor  int // index over the flattened list of items
 }
 
 func NewNav(groups ...NavGroup) Nav {
 	return Nav{Groups: groups, Focused: true}
 }
 
-// WithFocus devuelve una copia con el foco puesto o quitado.
+// WithFocus returns a copy with focus set or cleared.
 func (n Nav) WithFocus(focused bool) Nav {
 	n.Focused = focused
 	return n
 }
 
-// items aplana los sub-items de todos los grupos en orden de pantalla.
+// items flattens every group's sub-items in screen order.
 func (n Nav) items() []NavItem {
 	var out []NavItem
 	for _, g := range n.Groups {
@@ -49,7 +49,8 @@ func (n Nav) items() []NavItem {
 	return out
 }
 
-// Selected devuelve el item bajo el cursor, o un NavItem vacío si no hay.
+// Selected returns the item under the cursor, or an empty NavItem if there is
+// none.
 func (n Nav) Selected() NavItem {
 	items := n.items()
 	if len(items) == 0 {
@@ -80,26 +81,26 @@ func (n Nav) View(t styles.Theme, width, height int) string {
 
 	lines, cursorLine := n.lines(t, inner)
 
-	// La ventana recorta líneas, pero el cursor indexa items: por eso lines
-	// devuelve en qué línea cayó el seleccionado.
+	// The window clips lines, but the cursor indexes items: that is why lines
+	// returns which line the selected one fell on.
 	if offset := ui.CenteredOffset(cursorLine, len(lines), height); offset > 0 {
 		lines = lines[offset:min(offset+height, len(lines))]
 	}
 
-	// Height rellena pero no recorta; sin MaxHeight el menú desbordaría.
+	// Height pads but does not clip; without MaxHeight the menu would overflow.
 	return t.Nav.Base.Width(width).Height(height).MaxHeight(height).Render(
 		lipgloss.JoinVertical(lipgloss.Left, lines...),
 	)
 }
 
-// lines renderiza el menú completo y devuelve la línea del item seleccionado.
+// lines renders the whole menu and returns the line of the selected item.
 func (n Nav) lines(t styles.Theme, width int) (lines []string, cursorLine int) {
-	item := 0 // índice sobre la lista aplanada
+	item := 0 // index over the flattened list
 	for gi, g := range n.Groups {
 		if gi > 0 {
 			lines = append(lines, "")
 		}
-		// Mayúsculas: son etiquetas de agrupación, no contenido.
+		// Uppercase: they are grouping labels, not content.
 		lines = append(lines, t.Nav.Group.Render(fit(t, strings.ToUpper(g.Label), width)))
 
 		for _, entry := range g.Items {
@@ -111,7 +112,7 @@ func (n Nav) lines(t styles.Theme, width int) (lines []string, cursorLine int) {
 					style = t.Nav.Blurred
 				}
 			}
-			// Width en el estilo para que el fondo llegue hasta el borde.
+			// Width on the style so the background reaches the edge.
 			lines = append(lines, style.Width(width).Render(fit(t, label, width)))
 			item++
 		}
@@ -119,7 +120,8 @@ func (n Nav) lines(t styles.Theme, width int) (lines []string, cursorLine int) {
 	return lines, cursorLine
 }
 
-// fit trunca respetando los códigos ANSI, que cortados por byte se romperían.
+// fit truncates while respecting the ANSI codes, which would break if cut by
+// byte.
 func fit(t styles.Theme, s string, width int) string {
 	if width <= 0 {
 		return ""

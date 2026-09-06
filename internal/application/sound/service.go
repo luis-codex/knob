@@ -1,9 +1,10 @@
-// Package sound contiene los casos de uso de audio: salidas y micrófonos.
+// Package sound holds the audio use cases: outputs and microphones.
 //
-// Es la frontera del dominio: recibe primitivas de la interfaz, las convierte
-// en objetos de valor y orquesta el repositorio.
+// It is the domain's boundary: it takes primitives from the interface, turns
+// them into value objects and orchestrates the repository.
 //
-// Se llama sound y no audio para no chocar con el paquete de dominio.
+// It is named sound rather than audio so it does not clash with the domain
+// package.
 package sound
 
 import (
@@ -12,32 +13,32 @@ import (
 	"settings-cli/internal/domain/audio"
 )
 
-// change es una operación del agregado. No devuelve error: ajustar volumen o
-// silencio siempre es posible, lo que puede fallar es el nivel pedido, y eso
-// se valida antes.
+// change is an aggregate operation. It returns no error: adjusting volume or
+// mute is always possible; what can fail is the requested level, and that is
+// validated beforehand.
 type change func(audio.Device) audio.Device
 
-// streamChange es lo mismo para los flujos.
+// streamChange is the same for streams.
 type streamChange func(audio.Stream) audio.Stream
 
-// Service agrupa los casos de uso sobre dispositivos de sonido.
+// Service groups the use cases over sound devices.
 type Service struct {
 	repo    audio.Repository
 	streams audio.StreamRepository
 	watcher audio.Watcher
 }
 
-// NewService recibe los puertos, no implementaciones concretas.
+// NewService takes the ports, not concrete implementations.
 func NewService(repo audio.Repository, streams audio.StreamRepository, watcher audio.Watcher) *Service {
 	return &Service{repo: repo, streams: streams, watcher: watcher}
 }
 
-// Streams son los flujos de audio de las aplicaciones.
+// Streams are the applications' audio streams.
 func (s *Service) Streams(ctx context.Context) ([]audio.Stream, error) {
 	return s.streams.List(ctx)
 }
 
-// applyStream carga el flujo, le aplica el cambio y lo guarda.
+// applyStream loads the stream, applies the change and saves it.
 func (s *Service) applyStream(ctx context.Context, index int, c streamChange) (audio.Stream, error) {
 	id, err := audio.NewStreamID(index)
 	if err != nil {
@@ -56,7 +57,7 @@ func (s *Service) applyStream(ctx context.Context, index int, c streamChange) (a
 	return next, nil
 }
 
-// AdjustStreamVolume suma delta al nivel del flujo, acotando en los extremos.
+// AdjustStreamVolume adds delta to the stream's level, clamping at the ends.
 func (s *Service) AdjustStreamVolume(ctx context.Context, index, delta int) (audio.Stream, error) {
 	return s.applyStream(ctx, index, func(st audio.Stream) audio.Stream {
 		return st.AdjustVolume(delta)
@@ -67,23 +68,23 @@ func (s *Service) ToggleStreamMuted(ctx context.Context, index int) (audio.Strea
 	return s.applyStream(ctx, index, audio.Stream.ToggleMuted)
 }
 
-// Changes avisa de los cambios hechos fuera de la aplicación.
+// Changes reports changes made outside the application.
 func (s *Service) Changes(ctx context.Context) (<-chan struct{}, error) {
 	return s.watcher.Changes(ctx)
 }
 
-// Outputs son las salidas: altavoces y auriculares.
+// Outputs are the outputs: speakers and headphones.
 func (s *Service) Outputs(ctx context.Context) ([]audio.Device, error) {
 	return s.repo.List(ctx, audio.Output)
 }
 
-// Inputs son los micrófonos.
+// Inputs are the microphones.
 func (s *Service) Inputs(ctx context.Context) ([]audio.Device, error) {
 	return s.repo.List(ctx, audio.Input)
 }
 
-// apply carga el dispositivo, le aplica el cambio y lo guarda. Todas las
-// operaciones siguen este mismo camino.
+// apply loads the device, applies the change and saves it. Every operation
+// follows this same path.
 func (s *Service) apply(ctx context.Context, id string, c change) (audio.Device, error) {
 	deviceID, err := audio.NewID(id)
 	if err != nil {
@@ -102,8 +103,8 @@ func (s *Service) apply(ctx context.Context, id string, c change) (audio.Device,
 	return next, nil
 }
 
-// AdjustVolume suma delta al nivel actual. A diferencia de SetVolume acota en
-// los extremos: es lo que hace una tecla de subir o bajar volumen.
+// AdjustVolume adds delta to the current level. Unlike SetVolume it clamps at
+// the ends: it is what a volume-up or volume-down key does.
 func (s *Service) AdjustVolume(ctx context.Context, id string, delta int) (audio.Device, error) {
 	return s.apply(ctx, id, func(d audio.Device) audio.Device {
 		return d.AdjustVolume(delta)
@@ -114,10 +115,10 @@ func (s *Service) ToggleMuted(ctx context.Context, id string) (audio.Device, err
 	return s.apply(ctx, id, audio.Device.ToggleMuted)
 }
 
-// MakeDefault marca el dispositivo como predeterminado para su dirección.
+// MakeDefault marks the device as the default for its direction.
 //
-// No pasa por apply: cambiar el predeterminado afecta a los demás
-// dispositivos, así que lo resuelve el servidor de sonido y luego se relee.
+// It does not go through apply: changing the default affects the other
+// devices, so the sound server resolves it and then it is re-read.
 func (s *Service) MakeDefault(ctx context.Context, id string) (audio.Device, error) {
 	deviceID, err := audio.NewID(id)
 	if err != nil {

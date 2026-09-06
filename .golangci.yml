@@ -3,11 +3,11 @@ version: "2"
 
 linters:
   # Keeps the v2 defaults (errcheck, govet, ineffassign, staticcheck, unused)
-  # and adds a few low-noise extras.
+  # and adds a few low-noise extras. revive is left out on purpose: its
+  # exported-comment rule fights the project's terse godoc style.
   enable:
     - bodyclose
     - misspell
-    - revive
     - unconvert
   exclusions:
     generated: lax

@@ -1,5 +1,5 @@
-// Package layouts compone regiones de pantalla: calcula medidas y las une
-// con dividers, sin saber qué hay dentro.
+// Package layouts composes screen regions: it computes measurements and joins
+// them with dividers, without knowing what is inside.
 package layouts
 
 import (
@@ -9,19 +9,19 @@ import (
 	"settings-cli/internal/shared/ui"
 )
 
-// Section se renderiza en el área que le den. La declara este paquete, que
-// es quien la consume.
+// Section renders into the area it is given. It is declared by this package,
+// which is the one that consumes it.
 type Section interface {
 	View(t styles.Theme, width, height int) string
 }
 
-// Medidas mínimas para que el layout tenga sentido.
+// Minimum measurements for the layout to make sense.
 const (
 	minWidth  = styles.SidebarWidth + styles.DividerSize + 20
 	minHeight = styles.HeaderHeight + styles.FooterHeight + 2*styles.DividerSize + 3
 )
 
-// App es el layout principal:
+// App is the main layout:
 //
 //	┌──────────────────────────────┐
 //	│ header                       │
@@ -36,22 +36,22 @@ type App struct {
 	Body    Section
 	Footer  Section
 
-	// Overlay se compone centrado sobre el body, que sigue visible debajo.
+	// Overlay is composed centered over the body, which stays visible beneath.
 	Overlay Section
 }
 
 func (a App) View(t styles.Theme, width, height int) string {
 	if width < minWidth || height < minHeight {
-		// Rellena el área entera: devolver solo el texto deja el marco con
-		// una fila del ancho equivocado.
+		// Fill the whole area: returning just the text leaves the frame with a
+		// row of the wrong width.
 		return t.Body.Base.
 			Width(width).Height(height).
 			MaxWidth(width).MaxHeight(height).
 			Align(lipgloss.Center, lipgloss.Center).
-			Render("Terminal demasiado pequeña")
+			Render("Terminal too small")
 	}
 
-	// Vertical: header + divider + centro + divider + footer.
+	// Vertical: header + divider + center + divider + footer.
 	centerHeight := height - styles.HeaderHeight - styles.FooterHeight - 2*styles.DividerSize
 	// Horizontal: sidebar + divider + body.
 	sidebarWidth := styles.SidebarWidth

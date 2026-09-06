@@ -1,47 +1,48 @@
 package bluetooth
 
-// Adapter es la radio Bluetooth del equipo. No tiene identidad: solo hay una.
+// Adapter is the machine's Bluetooth radio. It has no identity: there is only
+// one.
 type Adapter struct {
 	enabled      bool
 	discoverable bool
 	pairable     bool
 }
 
-// NewAdapter reconstruye el adaptador desde el almacenamiento. El valor cero
-// es apagado y no visible, que es el arranque seguro.
+// NewAdapter rebuilds the adapter from storage. The zero value is off and not
+// visible, which is the safe startup state.
 func NewAdapter(enabled bool) Adapter {
 	return Adapter{enabled: enabled}
 }
 
 func (a Adapter) Enabled() bool { return a.enabled }
 
-// Discoverable indica si otros dispositivos ven este equipo.
+// Discoverable reports whether other devices can see this machine.
 func (a Adapter) Discoverable() bool { return a.discoverable }
 
-// Pairable indica si este equipo acepta solicitudes de emparejamiento.
+// Pairable reports whether this machine accepts pairing requests.
 func (a Adapter) Pairable() bool { return a.pairable }
 
-// Visible resume lo que un panel de ajustes enseña como un solo interruptor:
-// el equipo se anuncia y acepta que le pidan emparejarse.
+// Visible sums up what a settings panel shows as a single switch: the machine
+// advertises itself and accepts pairing requests.
 func (a Adapter) Visible() bool { return a.discoverable && a.pairable }
 
-// Enable y Disable son idempotentes: un interruptor que falla al pulsarlo dos
-// veces no aporta nada, y aquí no hay invariante que proteger.
+// Enable and Disable are idempotent: a switch that fails on the second press
+// adds nothing, and there is no invariant to protect here.
 func (a Adapter) Enable() Adapter {
 	a.enabled = true
 	return a
 }
 
-// Disable apaga la radio y, con ella, la visibilidad: una radio apagada no
-// puede anunciarse ni aceptar solicitudes.
+// Disable turns off the radio and, with it, visibility: a radio that is off
+// cannot advertise itself or accept requests.
 func (a Adapter) Disable() Adapter {
 	a.enabled = false
 	a.discoverable, a.pairable = false, false
 	return a
 }
 
-// SetDiscoverable y SetPairable no hacen nada con la radio apagada. Es la
-// invariante del agregado: no existe un estado "apagado pero visible".
+// SetDiscoverable and SetPairable do nothing while the radio is off. That is
+// the aggregate's invariant: there is no "off but visible" state.
 func (a Adapter) SetDiscoverable(v bool) Adapter {
 	if !a.enabled {
 		return a
@@ -58,7 +59,7 @@ func (a Adapter) SetPairable(v bool) Adapter {
 	return a
 }
 
-// SetVisible conmuta ambos a la vez.
+// SetVisible toggles both at once.
 func (a Adapter) SetVisible(v bool) Adapter {
 	return a.SetDiscoverable(v).SetPairable(v)
 }

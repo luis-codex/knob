@@ -6,26 +6,26 @@ import (
 	"settings-cli/internal/domain/errs"
 )
 
-// Errores del dominio. Se comparan con errors.Is y llevan clase errs.Kind
-// para que las capas superiores reaccionen sin conocer este paquete.
+// Domain errors. They are compared with errors.Is and carry an errs.Kind
+// class so the upper layers can react without knowing this package.
 //
-// Las transiciones imposibles son KindConflict y no KindInvalid: los datos son
-// correctos, lo que choca es el estado del dispositivo.
+// Impossible transitions are KindConflict, not KindInvalid: the data is
+// correct, what clashes is the device's state.
 var (
-	ErrInvalidAddress = errs.Invalid("la dirección MAC no es válida")
-	ErrEmptyName      = errs.Invalid("el nombre no puede estar vacío")
-	ErrNameTooLong    = errs.Invalid(fmt.Sprintf("el nombre supera los %d caracteres", MaxNameLength))
-	ErrInvalidBattery = errs.Invalid("el nivel de batería debe estar entre 0 y 100")
-	ErrInvalidPasskey = errs.Invalid("el código debe tener como máximo 6 dígitos")
-	ErrUnknownKind    = errs.Invalid("tipo de dispositivo desconocido")
+	ErrInvalidAddress = errs.Invalid("the MAC address is not valid")
+	ErrEmptyName      = errs.Invalid("name must not be empty")
+	ErrNameTooLong    = errs.Invalid(fmt.Sprintf("name exceeds %d characters", MaxNameLength))
+	ErrInvalidBattery = errs.Invalid("battery level must be between 0 and 100")
+	ErrInvalidPasskey = errs.Invalid("the passkey must be at most 6 digits")
+	ErrUnknownKind    = errs.Invalid("unknown device kind")
 
-	ErrAdapterDisabled  = errs.Conflict("el Bluetooth está desactivado")
-	ErrNotVisible       = errs.Conflict("el equipo no es visible para otros dispositivos")
-	ErrAlreadyKnown     = errs.Conflict("el dispositivo ya está registrado")
-	ErrAlreadyPaired    = errs.Conflict("el dispositivo ya está emparejado")
-	ErrNotPaired        = errs.Conflict("el dispositivo no está emparejado")
-	ErrAlreadyConnected = errs.Conflict("el dispositivo ya está conectado")
-	ErrNotConnected     = errs.Conflict("el dispositivo no está conectado")
+	ErrAdapterDisabled  = errs.Conflict("Bluetooth is disabled")
+	ErrNotVisible       = errs.Conflict("the machine is not visible to other devices")
+	ErrAlreadyKnown     = errs.Conflict("the device is already registered")
+	ErrAlreadyPaired    = errs.Conflict("the device is already paired")
+	ErrNotPaired        = errs.Conflict("the device is not paired")
+	ErrAlreadyConnected = errs.Conflict("the device is already connected")
+	ErrNotConnected     = errs.Conflict("the device is not connected")
 
-	ErrNotFound = errs.NotFound("el dispositivo no existe")
+	ErrNotFound = errs.NotFound("the device does not exist")
 )

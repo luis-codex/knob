@@ -16,7 +16,7 @@ func mustDevice(t *testing.T, level int, muted bool) audio.Device {
 	if err != nil {
 		t.Fatalf("NewID: %v", err)
 	}
-	name, err := audio.NewName("Salida HDMI")
+	name, err := audio.NewName("HDMI Output")
 	if err != nil {
 		t.Fatalf("NewName: %v", err)
 	}
@@ -38,11 +38,11 @@ func TestNewVolume(t *testing.T) {
 		level int
 		err   error
 	}{
-		{name: "cero es válido", level: 0},
+		{name: "zero is valid", level: 0},
 		{name: "nominal", level: 100},
-		{name: "amplificado", level: 150},
-		{name: "negativo", level: -1, err: audio.ErrInvalidVolume},
-		{name: "pasado del máximo", level: 151, err: audio.ErrInvalidVolume},
+		{name: "amplified", level: 150},
+		{name: "negative", level: -1, err: audio.ErrInvalidVolume},
+		{name: "past the max", level: 151, err: audio.ErrInvalidVolume},
 	}
 
 	for _, tc := range tests {
@@ -51,10 +51,10 @@ func TestNewVolume(t *testing.T) {
 
 			if tc.err != nil {
 				if !errors.Is(err, tc.err) {
-					t.Fatalf("error = %v, se esperaba %v", err, tc.err)
+					t.Fatalf("error = %v, want %v", err, tc.err)
 				}
 				if !errs.IsInvalid(err) {
-					t.Error("debe llegar clasificado como inválido")
+					t.Error("must arrive classified as invalid")
 				}
 				return
 			}
@@ -65,11 +65,11 @@ func TestNewVolume(t *testing.T) {
 	}
 }
 
-// El valor cero de Volume es 0 %, un nivel legítimo, no un valor inválido.
-func TestVolumeCeroEsValido(t *testing.T) {
+// The zero value of Volume is 0%, a legitimate level, not an invalid value.
+func TestVolumeZeroIsValid(t *testing.T) {
 	var zero audio.Volume
 	if zero.Level() != 0 || zero.Amplified() {
-		t.Errorf("valor cero = %d/%v", zero.Level(), zero.Amplified())
+		t.Errorf("zero value = %d/%v", zero.Level(), zero.Amplified())
 	}
 }
 
@@ -84,7 +84,7 @@ func TestClampVolume(t *testing.T) {
 
 	for _, tc := range tests {
 		if got := audio.ClampVolume(tc.in); got.Level() != tc.want {
-			t.Errorf("ClampVolume(%d) = %d, se esperaba %d", tc.in, got.Level(), tc.want)
+			t.Errorf("ClampVolume(%d) = %d, want %d", tc.in, got.Level(), tc.want)
 		}
 	}
 }
@@ -104,8 +104,8 @@ func TestAmplified(t *testing.T) {
 	}
 }
 
-// AdjustVolume acota en los extremos: llegar al tope con una tecla de subir
-// volumen no es un error.
+// AdjustVolume clamps at the ends: reaching the limit with a volume-up key is
+// not an error.
 func TestAdjustVolume(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -113,37 +113,37 @@ func TestAdjustVolume(t *testing.T) {
 		delta int
 		want  int
 	}{
-		{name: "sube", start: 50, delta: 10, want: 60},
-		{name: "baja", start: 50, delta: -10, want: 40},
-		{name: "no baja de cero", start: 5, delta: -20, want: 0},
-		{name: "no pasa del máximo", start: 145, delta: 20, want: audio.MaxVolume},
+		{name: "up", start: 50, delta: 10, want: 60},
+		{name: "down", start: 50, delta: -10, want: 40},
+		{name: "does not go below zero", start: 5, delta: -20, want: 0},
+		{name: "does not go past the max", start: 145, delta: 20, want: audio.MaxVolume},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			got := mustDevice(t, tc.start, false).AdjustVolume(tc.delta)
 			if got.Volume().Level() != tc.want {
-				t.Errorf("%d %+d = %d, se esperaba %d", tc.start, tc.delta, got.Volume().Level(), tc.want)
+				t.Errorf("%d %+d = %d, want %d", tc.start, tc.delta, got.Volume().Level(), tc.want)
 			}
 		})
 	}
 }
 
-// Volumen y silencio son controles independientes.
-func TestVolumenYSilencioSonIndependientes(t *testing.T) {
+// Volume and mute are independent controls.
+func TestVolumeAndMuteAreIndependent(t *testing.T) {
 	muted := mustDevice(t, 50, true)
 
 	louder := muted.SetVolume(audio.ClampVolume(80))
 	if !louder.Muted() {
-		t.Error("subir el volumen no debe quitar el silencio")
+		t.Error("raising the volume must not clear mute")
 	}
 	if louder.Volume().Level() != 80 {
-		t.Errorf("volumen = %d", louder.Volume().Level())
+		t.Errorf("volume = %d", louder.Volume().Level())
 	}
 
 	unmuted := louder.SetMuted(false)
 	if unmuted.Volume().Level() != 80 {
-		t.Error("quitar el silencio no debe tocar el volumen")
+		t.Error("clearing mute must not touch the volume")
 	}
 }
 
@@ -152,13 +152,13 @@ func TestToggleMuted(t *testing.T) {
 
 	once := device.ToggleMuted()
 	if !once.Muted() {
-		t.Error("no silenció")
+		t.Error("did not mute")
 	}
 	if device.Muted() {
-		t.Error("mutó el original en vez de devolver copia")
+		t.Error("mutated the original instead of returning a copy")
 	}
 	if twice := once.ToggleMuted(); twice.Muted() {
-		t.Error("dos veces debe volver al estado inicial")
+		t.Error("twice must return to the initial state")
 	}
 }
 
@@ -166,13 +166,13 @@ func TestRestore(t *testing.T) {
 	id, _ := audio.NewID("x")
 	name, _ := audio.NewName("X")
 
-	t.Run("sin identificador", func(t *testing.T) {
+	t.Run("no identifier", func(t *testing.T) {
 		if _, err := audio.Restore(audio.ID{}, name, audio.Input, audio.Volume{}, false, false); !errors.Is(err, audio.ErrInvalidID) {
 			t.Fatalf("error = %v", err)
 		}
 	})
 
-	t.Run("sin nombre", func(t *testing.T) {
+	t.Run("no name", func(t *testing.T) {
 		if _, err := audio.Restore(id, audio.Name{}, audio.Input, audio.Volume{}, false, false); !errors.Is(err, audio.ErrEmptyName) {
 			t.Fatalf("error = %v", err)
 		}
@@ -181,7 +181,7 @@ func TestRestore(t *testing.T) {
 
 func TestNewID(t *testing.T) {
 	if _, err := audio.NewID("   "); !errors.Is(err, audio.ErrInvalidID) {
-		t.Errorf("id vacío: %v", err)
+		t.Errorf("empty id: %v", err)
 	}
 	got, err := audio.NewID("  alsa_output.x  ")
 	if err != nil || got.String() != "alsa_output.x" {
@@ -191,10 +191,10 @@ func TestNewID(t *testing.T) {
 
 func TestNewName(t *testing.T) {
 	if _, err := audio.NewName(""); !errors.Is(err, audio.ErrEmptyName) {
-		t.Errorf("nombre vacío: %v", err)
+		t.Errorf("empty name: %v", err)
 	}
 	if _, err := audio.NewName(strings.Repeat("a", audio.MaxNameLength+1)); !errors.Is(err, audio.ErrNameTooLong) {
-		t.Errorf("nombre largo: %v", err)
+		t.Errorf("long name: %v", err)
 	}
 }
 

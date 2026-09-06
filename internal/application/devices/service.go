@@ -1,10 +1,10 @@
-// Package devices contiene los casos de uso de dispositivos Bluetooth.
+// Package devices holds the Bluetooth-device use cases.
 //
-// Es la frontera del dominio: recibe primitivas de la interfaz, las convierte
-// en objetos de valor y orquesta el repositorio.
+// It is the domain's boundary: it takes primitives from the interface, turns
+// them into value objects and orchestrates the repository.
 //
-// Se llama devices (plural) y no bluetooth para no chocar con el paquete de
-// dominio.
+// It is named devices (plural) rather than bluetooth so it does not clash with
+// the domain package.
 package devices
 
 import (
@@ -15,39 +15,39 @@ import (
 	"settings-cli/internal/domain/bluetooth"
 )
 
-// transition es una operación del agregado que devuelve el dispositivo
-// resultante. Coincide con la firma de Pair, Connect y compañía, que se pasan
-// como expresiones de método.
+// transition is an aggregate operation that returns the resulting device. It
+// matches the signature of Pair, Connect and friends, which are passed as
+// method expressions.
 type transition func(bluetooth.Device) (bluetooth.Device, error)
 
-// Service agrupa los casos de uso sobre dispositivos y adaptador.
+// Service groups the use cases over devices and the adapter.
 //
-// La regla de que no se puede emparejar ni conectar con la radio apagada vive
-// aquí y no en el dominio: cruza dos agregados, y ninguno de los dos puede
-// conocer al otro sin acoplarlos.
+// The rule that you cannot pair or connect while the radio is off lives here,
+// not in the domain: it crosses two aggregates, and neither can know the other
+// without coupling them.
 type Service struct {
 	repo     bluetooth.Repository
 	adapters bluetooth.AdapterRepository
 	scanner  bluetooth.Scanner
 }
 
-// NewService recibe los puertos, no implementaciones concretas.
+// NewService takes the ports, not concrete implementations.
 func NewService(repo bluetooth.Repository, adapters bluetooth.AdapterRepository, scanner bluetooth.Scanner) *Service {
 	return &Service{repo: repo, adapters: adapters, scanner: scanner}
 }
 
-// Scan busca dispositivos cercanos y registra los que no se conocían.
-// Devuelve solo los nuevos: los ya conocidos se dejan intactos para no pisar
-// su estado ni su nombre.
+// Scan looks for nearby devices and records the ones that were not known.
+// It returns only the new ones: the already-known devices are left untouched
+// so their state and name are not overwritten.
 func (s *Service) Scan(ctx context.Context) ([]bluetooth.Device, error) {
 	if err := s.requireAdapter(ctx); err != nil {
 		return nil, err
 	}
 
-	// Lo ya conocido se mira ANTES de buscar. Con un backend real el propio
-	// escaneo hace que el repositorio pase a conocer lo que encuentra, así
-	// que preguntarle después daría siempre "ya conocido" y nunca habría
-	// novedades.
+	// What is already known is checked BEFORE scanning. With a real backend
+	// the scan itself makes the repository come to know what it finds, so
+	// asking it afterwards would always say "already known" and there would
+	// never be anything new.
 	known, err := s.knownAddresses(ctx)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (s *Service) knownAddresses(ctx context.Context) (map[string]struct{}, erro
 	return known, nil
 }
 
-// isKnown distingue "no existe" de "el repositorio falló".
+// isKnown tells "does not exist" apart from "the repository failed".
 func (s *Service) isKnown(ctx context.Context, address bluetooth.Address) (bool, error) {
 	switch _, err := s.repo.FindByAddress(ctx, address); {
 	case err == nil:
@@ -97,13 +97,13 @@ func (s *Service) isKnown(ctx context.Context, address bluetooth.Address) (bool,
 	}
 }
 
-// Adapter devuelve el estado de la radio.
+// Adapter returns the radio's state.
 func (s *Service) Adapter(ctx context.Context) (bluetooth.Adapter, error) {
 	return s.adapters.Get(ctx)
 }
 
-// EnableAdapter enciende la radio. No reconecta nada: reconectar es una
-// decisión del usuario, no un efecto de encender.
+// EnableAdapter turns the radio on. It reconnects nothing: reconnecting is the
+// user's decision, not an effect of turning on.
 func (s *Service) EnableAdapter(ctx context.Context) (bluetooth.Adapter, error) {
 	adapter, err := s.adapters.Get(ctx)
 	if err != nil {
@@ -117,11 +117,11 @@ func (s *Service) EnableAdapter(ctx context.Context) (bluetooth.Adapter, error) 
 	return next, nil
 }
 
-// DisableAdapter apaga la radio y corta las conexiones activas.
+// DisableAdapter turns the radio off and drops the active connections.
 //
-// Los dispositivos se desconectan antes de guardar el adaptador: si algo
-// fallara a mitad, el estado guardado seguiría diciendo "encendido", que es
-// más fiel que lo contrario.
+// Devices are disconnected before the adapter is saved: if something failed
+// halfway, the saved state would still say "on", which is more faithful than
+// the opposite.
 func (s *Service) DisableAdapter(ctx context.Context) (bluetooth.Adapter, error) {
 	adapter, err := s.adapters.Get(ctx)
 	if err != nil {
@@ -161,7 +161,7 @@ func (s *Service) disconnectAll(ctx context.Context) error {
 	return nil
 }
 
-// requireAdapter falla si la radio está apagada.
+// requireAdapter fails if the radio is off.
 func (s *Service) requireAdapter(ctx context.Context) error {
 	adapter, err := s.adapters.Get(ctx)
 	if err != nil {
@@ -173,8 +173,8 @@ func (s *Service) requireAdapter(ctx context.Context) error {
 	return nil
 }
 
-// apply carga el dispositivo, le aplica la transición y guarda el resultado.
-// Todas las operaciones de estado siguen este mismo camino.
+// apply loads the device, applies the transition to it and saves the result.
+// Every state operation follows this same path.
 func (s *Service) apply(ctx context.Context, address string, change transition) (bluetooth.Device, error) {
 	addr, err := bluetooth.NewAddress(address)
 	if err != nil {
@@ -197,7 +197,7 @@ func (s *Service) apply(ctx context.Context, address string, change transition) 
 	return next, nil
 }
 
-// Discover registra un dispositivo nuevo, sin emparejar.
+// Discover records a new device, not yet paired.
 func (s *Service) Discover(ctx context.Context, address, name, kind string) (bluetooth.Device, error) {
 	addr, err := bluetooth.NewAddress(address)
 	if err != nil {
@@ -214,8 +214,8 @@ func (s *Service) Discover(ctx context.Context, address, name, kind string) (blu
 		return bluetooth.Device{}, err
 	}
 
-	// Registrar dos veces la misma dirección es un conflicto, no un alta: el
-	// alta silenciosa perdería el estado del dispositivo ya conocido.
+	// Recording the same address twice is a conflict, not a create: a silent
+	// create would lose the state of the already-known device.
 	known, err := s.isKnown(ctx, addr)
 	if err != nil {
 		return bluetooth.Device{}, err
@@ -235,9 +235,8 @@ func (s *Service) Discover(ctx context.Context, address, name, kind string) (blu
 	return device, nil
 }
 
-// Pair y Connect exigen la radio encendida. Las demás operaciones son de
-// gestión y funcionan igual con el Bluetooth apagado, como en cualquier panel
-// de ajustes.
+// Pair and Connect require the radio to be on. The other operations are
+// management and work the same with Bluetooth off, as in any settings panel.
 func (s *Service) Pair(ctx context.Context, address string) (bluetooth.Device, error) {
 	if err := s.requireAdapter(ctx); err != nil {
 		return bluetooth.Device{}, err
@@ -260,7 +259,7 @@ func (s *Service) Disconnect(ctx context.Context, address string) (bluetooth.Dev
 	return s.apply(ctx, address, bluetooth.Device.Disconnect)
 }
 
-// Rename cambia el nombre visible del dispositivo.
+// Rename changes the device's visible name.
 func (s *Service) Rename(ctx context.Context, address, name string) (bluetooth.Device, error) {
 	newName, err := bluetooth.NewName(name)
 	if err != nil {
@@ -272,7 +271,7 @@ func (s *Service) Rename(ctx context.Context, address, name string) (bluetooth.D
 	})
 }
 
-// ReportBattery registra el nivel de carga informado por el dispositivo.
+// ReportBattery records the charge level reported by the device.
 func (s *Service) ReportBattery(ctx context.Context, address string, level int) (bluetooth.Device, error) {
 	battery, err := bluetooth.NewBattery(level)
 	if err != nil {
@@ -284,8 +283,7 @@ func (s *Service) ReportBattery(ctx context.Context, address string, level int) 
 	})
 }
 
-// Remove olvida el dispositivo por completo. A diferencia de Unpair, deja de
-// estar en la lista.
+// Remove forgets the device entirely. Unlike Unpair, it drops out of the list.
 func (s *Service) Remove(ctx context.Context, address string) error {
 	addr, err := bluetooth.NewAddress(address)
 	if err != nil {
@@ -294,13 +292,13 @@ func (s *Service) Remove(ctx context.Context, address string) error {
 	return s.repo.Delete(ctx, addr)
 }
 
-// List devuelve todos los dispositivos conocidos.
+// List returns every known device.
 func (s *Service) List(ctx context.Context) ([]bluetooth.Device, error) {
 	return s.repo.List(ctx)
 }
 
-// Search filtra por nombre, sin distinguir mayúsculas. Con query vacía
-// equivale a List.
+// Search filters by name, case-insensitively. With an empty query it is the
+// same as List.
 func (s *Service) Search(ctx context.Context, query string) ([]bluetooth.Device, error) {
 	all, err := s.repo.List(ctx)
 	if err != nil {

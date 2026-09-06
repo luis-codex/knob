@@ -8,7 +8,7 @@ import (
 	"settings-cli/internal/domain/bluetooth"
 )
 
-// Scanner pide a BlueZ que busque dispositivos durante un tiempo.
+// Scanner asks BlueZ to look for devices for a while.
 type Scanner struct {
 	window time.Duration
 	repo   *Repository
@@ -16,15 +16,15 @@ type Scanner struct {
 
 var _ bluetooth.Scanner = (*Scanner)(nil)
 
-// NewScanner recibe cuánto dura la búsqueda.
+// NewScanner takes how long the search lasts.
 func NewScanner(window time.Duration) *Scanner {
 	return &Scanner{window: window, repo: NewRepository()}
 }
 
-// Scan lanza el descubrimiento y devuelve lo que BlueZ conoce al terminar.
+// Scan starts discovery and returns what BlueZ knows when it finishes.
 //
-// bluetoothctl no informa de qué encontró en esa pasada, así que se devuelve
-// todo lo visible; quedarse solo con lo nuevo es cosa del caso de uso.
+// bluetoothctl does not report what it found in that pass, so everything
+// visible is returned; keeping only the new ones is the use case's job.
 func (s *Scanner) Scan(ctx context.Context) ([]bluetooth.Device, error) {
 	seconds := strconv.Itoa(int(s.window.Seconds()))
 	if _, err := run(ctx, "--timeout", seconds, "scan", "on"); err != nil {

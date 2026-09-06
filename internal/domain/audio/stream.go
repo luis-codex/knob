@@ -2,8 +2,9 @@ package audio
 
 import "strings"
 
-// StreamID identifica un flujo. Es el índice que asigna el servidor: cambia
-// entre ejecuciones y no sirve para recordar nada de una sesión a otra.
+// StreamID identifies a stream. It is the index the server assigns: it changes
+// between runs and is no use for remembering anything from one session to the
+// next.
 type StreamID struct {
 	value int
 	set   bool
@@ -22,10 +23,10 @@ func (i StreamID) IsZero() bool { return !i.set }
 
 func (i StreamID) Equals(other StreamID) bool { return i.set == other.set && i.value == other.value }
 
-// Stream es un flujo de audio de una aplicación: lo que suena y de quién.
+// Stream is an application's audio stream: what is playing and whose it is.
 //
-// A diferencia de Device es efímero —nace y muere con la reproducción— y no
-// puede ser predeterminado: nadie elige "el flujo por defecto".
+// Unlike Device it is ephemeral -- it is born and dies with the playback --
+// and cannot be the default: nobody picks "the default stream".
 type Stream struct {
 	id     StreamID
 	app    Name
@@ -35,10 +36,10 @@ type Stream struct {
 	paused bool
 }
 
-// RestoreStream reconstruye un flujo tal y como lo informa el servidor.
+// RestoreStream rebuilds a stream exactly as the server reports it.
 //
-// title es texto opaco del sistema (la pista, el fichero) y puede venir vacío
-// o larguísimo: no se valida, lo recorta quien lo pinte.
+// title is opaque system text (the track, the file) and may come empty or
+// very long: it is not validated, whoever renders it trims it.
 func RestoreStream(id StreamID, app Name, title string, volume Volume, muted, paused bool) (Stream, error) {
 	switch {
 	case id.IsZero():
@@ -67,7 +68,7 @@ func (s Stream) Volume() Volume { return s.volume }
 
 func (s Stream) Muted() bool { return s.muted }
 
-// Paused indica que la aplicación tiene la reproducción detenida.
+// Paused reports that the application has playback stopped.
 func (s Stream) Paused() bool { return s.paused }
 
 func (s Stream) IsZero() bool { return s.id.IsZero() }
@@ -77,7 +78,7 @@ func (s Stream) SetVolume(v Volume) Stream {
 	return s
 }
 
-// AdjustVolume suma delta acotando en los extremos.
+// AdjustVolume adds delta, clamping at the ends.
 func (s Stream) AdjustVolume(delta int) Stream {
 	return s.SetVolume(ClampVolume(s.volume.Level() + delta))
 }

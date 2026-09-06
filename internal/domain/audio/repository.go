@@ -2,47 +2,47 @@ package audio
 
 import "context"
 
-// Repository es el puerto hacia el servidor de sonido: lo declara el dominio y
-// lo implementa infraestructura.
+// Repository is the port to the sound server: the domain declares it and
+// infrastructure implements it.
 //
-// No hay Delete ni alta: los dispositivos de sonido aparecen y desaparecen con
-// el hardware, no por decisión de la aplicación.
+// There is no Delete or create: sound devices appear and disappear with the
+// hardware, not by decision of the application.
 type Repository interface {
-	// List devuelve los dispositivos de una dirección, en el orden que
-	// informe el sistema.
+	// List returns the devices for a direction, in whatever order the system
+	// reports.
 	List(ctx context.Context, direction Direction) ([]Device, error)
-	// FindByID devuelve ErrNotFound si no existe.
+	// FindByID returns ErrNotFound if it does not exist.
 	FindByID(ctx context.Context, id ID) (Device, error)
-	// Save aplica volumen y silencio al dispositivo real.
+	// Save applies volume and mute to the real device.
 	Save(ctx context.Context, d Device) error
-	// SetDefault marca el dispositivo como predeterminado para su dirección.
+	// SetDefault marks the device as the default for its direction.
 	SetDefault(ctx context.Context, id ID) error
 }
 
-// StreamRepository es el puerto hacia los flujos de las aplicaciones.
+// StreamRepository is the port to application streams.
 //
-// Va aparte de Repository porque son colecciones distintas: los dispositivos
-// persisten y los flujos aparecen y desaparecen con cada reproducción.
+// It is separate from Repository because they are different collections:
+// devices persist, streams appear and disappear with each playback.
 type StreamRepository interface {
-	// List devuelve los flujos activos.
+	// List returns the active streams.
 	List(ctx context.Context) ([]Stream, error)
-	// FindByID devuelve ErrStreamNotFound si el flujo ya terminó.
+	// FindByID returns ErrStreamNotFound if the stream has ended.
 	FindByID(ctx context.Context, id StreamID) (Stream, error)
-	// Save aplica volumen y silencio al flujo real.
+	// Save applies volume and mute to the real stream.
 	Save(ctx context.Context, s Stream) error
 }
 
-// Watcher avisa de cambios hechos fuera de la aplicación: teclas de volumen,
-// un mezclador gráfico, conectar unos auriculares.
+// Watcher reports changes made outside the application: volume keys, a
+// graphical mixer, plugging in a pair of headphones.
 //
-// Es un puerto de entrada: empuja en vez de responder. Sin él la interfaz
-// solo se entera de lo que cambia ella misma.
+// It is an input port: it pushes instead of responding. Without it the
+// interface only learns about what it changes itself.
 type Watcher interface {
-	// Changes entrega un aviso por cada cambio. El canal se cierra cuando el
-	// contexto termina.
+	// Changes delivers one notification per change. The channel closes when
+	// the context ends.
 	//
-	// Los avisos no llevan detalle ni se acumulan: varios cambios seguidos
-	// pueden llegar como uno solo. Quien lo reciba debe releer el estado, no
-	// deducirlo del número de avisos.
+	// Notifications carry no detail and do not accumulate: several changes in
+	// a row may arrive as one. The receiver must re-read the state, not infer
+	// it from the number of notifications.
 	Changes(ctx context.Context) (<-chan struct{}, error)
 }

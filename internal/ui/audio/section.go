@@ -9,10 +9,10 @@ import (
 	"settings-cli/internal/shared/styles"
 )
 
-// Section es una lista con encabezado dentro de la pantalla de sonido.
+// Section is a list with a heading inside the sound screen.
 //
-// La lista se le pasa desde fuera porque guarda el cursor: la sección la pinta,
-// pero no la posee.
+// The list is passed in from outside because it holds the cursor: the section
+// renders it, but does not own it.
 type Section struct {
 	Label   string
 	Meters  []Meter
@@ -21,13 +21,13 @@ type Section struct {
 	Focused bool
 }
 
-// Chrome son las filas que gasta una sección aparte de su lista: el encabezado
-// y la línea en blanco que la cierra.
+// Chrome is the rows a section spends apart from its list: the heading and the
+// blank line that closes it.
 const Chrome = 2
 
-// Render devuelve las filas de la sección.
+// Render returns the section's rows.
 func (s Section) Render(t styles.Theme, width, height int) []string {
-	// La etiqueta va en mayúsculas y pasa a acento cuando tiene el foco.
+	// The label is uppercase and switches to accent when it has focus.
 	style := t.Body.Section
 	if s.Focused {
 		style = style.Foreground(t.Color.Accent)

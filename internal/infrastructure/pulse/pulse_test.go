@@ -6,7 +6,7 @@ import (
 	"settings-cli/internal/domain/audio"
 )
 
-// Salida real de `pactl -f json list sinks`, recortada.
+// Real output of `pactl -f json list sinks`, trimmed.
 const sinksJSON = `[
   {
     "index": 55,
@@ -33,7 +33,7 @@ const sinksJSON = `[
   }
 ]`
 
-// En una fuente, monitor_source vacío significa entrada real.
+// On a source, an empty monitor_source means a real input.
 const sourcesJSON = `[
   {
     "name": "alsa_output.pci-0000_01_00.1.hdmi-stereo.monitor",
@@ -68,65 +68,65 @@ func devicesFrom(t *testing.T, raw string, direction audio.Direction, defaultNam
 	return devices
 }
 
-func TestSalidas(t *testing.T) {
+func TestOutputs(t *testing.T) {
 	got := devicesFrom(t, sinksJSON, audio.Output, "alsa_output.pci-0000_01_00.1.hdmi-stereo")
 
 	if len(got) != 2 {
-		t.Fatalf("se leyeron %d salidas, se esperaban 2", len(got))
+		t.Fatalf("read %d outputs, want 2", len(got))
 	}
 
-	t.Run("volumen", func(t *testing.T) {
-		// base_volume es siempre 100%: leerlo por error pondría todo al 100%.
+	t.Run("volume", func(t *testing.T) {
+		// base_volume is always 100%: reading it by mistake would set everything to 100%.
 		if got[0].Volume().Level() != 45 || got[1].Volume().Level() != 50 {
-			t.Errorf("volúmenes = %d%%/%d%%", got[0].Volume().Level(), got[1].Volume().Level())
+			t.Errorf("volumes = %d%%/%d%%", got[0].Volume().Level(), got[1].Volume().Level())
 		}
 	})
 
-	t.Run("predeterminado", func(t *testing.T) {
+	t.Run("default", func(t *testing.T) {
 		if !got[0].IsDefault() || got[1].IsDefault() {
-			t.Errorf("predeterminados = %v/%v", got[0].IsDefault(), got[1].IsDefault())
+			t.Errorf("defaults = %v/%v", got[0].IsDefault(), got[1].IsDefault())
 		}
 	})
 
-	t.Run("silencio", func(t *testing.T) {
+	t.Run("mute", func(t *testing.T) {
 		if got[0].Muted() || !got[1].Muted() {
-			t.Errorf("silencios = %v/%v", got[0].Muted(), got[1].Muted())
+			t.Errorf("mutes = %v/%v", got[0].Muted(), got[1].Muted())
 		}
 	})
 
-	t.Run("nombre legible", func(t *testing.T) {
+	t.Run("readable name", func(t *testing.T) {
 		if got[1].Name().String() != "Built-in Audio Analog Stereo" {
-			t.Errorf("nombre = %q", got[1].Name())
+			t.Errorf("name = %q", got[1].Name())
 		}
 	})
 }
 
-// Los monitores son la copia de una salida, no micrófonos reales.
-func TestMicrofonosDescartanMonitores(t *testing.T) {
+// Monitors are the copy of an output, not real microphones.
+func TestMicrophonesDropMonitors(t *testing.T) {
 	got := devicesFrom(t, sourcesJSON, audio.Input, "alsa_input.usb-Maono_DGM20_USB_Microphone_20230101-00.analog-stereo")
 
 	if len(got) != 1 {
-		t.Fatalf("se leyeron %d micrófonos, se esperaba 1", len(got))
+		t.Fatalf("read %d microphones, want 1", len(got))
 	}
 	if got[0].Name().String() != "DGM20 USB Microphone Analog Stereo" {
-		t.Errorf("nombre = %q", got[0].Name())
+		t.Errorf("name = %q", got[0].Name())
 	}
 	if !got[0].IsDefault() || got[0].Direction() != audio.Input {
-		t.Errorf("micrófono = %v/%v", got[0].IsDefault(), got[0].Direction())
+		t.Errorf("microphone = %v/%v", got[0].IsDefault(), got[0].Direction())
 	}
 }
 
-// Un sink con monitor_source relleno sigue siendo una salida válida: esa clave
-// solo descarta cuando se leen entradas.
-func TestMonitorSourceNoDescartaSalidas(t *testing.T) {
+// A sink with a filled monitor_source is still a valid output: that key only
+// drops things when reading inputs.
+func TestMonitorSourceDoesNotDropOutputs(t *testing.T) {
 	if got := devicesFrom(t, sinksJSON, audio.Output, ""); len(got) != 2 {
-		t.Fatalf("se descartaron salidas por tener monitor: quedaron %d", len(got))
+		t.Fatalf("outputs dropped for having a monitor: %d remain", len(got))
 	}
 }
 
-// El recorrido de un mapa en Go es aleatorio: quedarse con un canal
-// cualquiera daría un nivel distinto en cada lectura.
-func TestVolumeOfTomaElMaximoYEsDeterminista(t *testing.T) {
+// Go's map iteration is random: keeping any one channel would give a different
+// level on each read.
+func TestVolumeOfTakesTheMaxAndIsDeterministic(t *testing.T) {
 	channels := map[string]jsonChannel{
 		"front-left":  {ValuePercent: "30%"},
 		"front-right": {ValuePercent: "80%"},
@@ -136,29 +136,29 @@ func TestVolumeOfTomaElMaximoYEsDeterminista(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		got, ok := volumeOf(channels)
 		if !ok || got.Level() != 80 {
-			t.Fatalf("volumeOf = %d/%v en la iteración %d", got.Level(), ok, i)
+			t.Fatalf("volumeOf = %d/%v on iteration %d", got.Level(), ok, i)
 		}
 	}
 }
 
-func TestVolumeOfSinCanales(t *testing.T) {
+func TestVolumeOfWithNoChannels(t *testing.T) {
 	if _, ok := volumeOf(nil); ok {
-		t.Error("sin canales no debe haber volumen")
+		t.Error("with no channels there must be no volume")
 	}
-	if _, ok := volumeOf(map[string]jsonChannel{"x": {ValuePercent: "raro"}}); ok {
-		t.Error("un porcentaje ilegible no debe dar volumen")
+	if _, ok := volumeOf(map[string]jsonChannel{"x": {ValuePercent: "weird"}}); ok {
+		t.Error("an unreadable percentage must not yield a volume")
 	}
 }
 
-func TestVolumenPorEncimaDelMaximoSeAcota(t *testing.T) {
-	raw := `[{"name":"raro","description":"Sube mucho","mute":false,"volume":{"mono":{"value_percent":"200%"}}}]`
+func TestVolumeAboveTheMaxIsClamped(t *testing.T) {
+	raw := `[{"name":"weird","description":"Cranks up","mute":false,"volume":{"mono":{"value_percent":"200%"}}}]`
 
 	got := devicesFrom(t, raw, audio.Output, "")
 	if len(got) != 1 {
-		t.Fatalf("se descartó el dispositivo en vez de acotarlo")
+		t.Fatalf("the device was dropped instead of clamped")
 	}
 	if got[0].Volume().Level() != audio.MaxVolume {
-		t.Errorf("volumen = %d%%, se esperaba %d%%", got[0].Volume().Level(), audio.MaxVolume)
+		t.Errorf("volume = %d%%, want %d%%", got[0].Volume().Level(), audio.MaxVolume)
 	}
 }
 
@@ -173,19 +173,19 @@ func TestParsePercent(t *testing.T) {
 		{" 0% ", 0, true},
 		{"45", 0, false},
 		{"", 0, false},
-		{"raro%", 0, false},
+		{"weird%", 0, false},
 	}
 
 	for _, tc := range tests {
 		got, ok := parsePercent(tc.in)
 		if ok != tc.found || got != tc.want {
-			t.Errorf("parsePercent(%q) = %d/%v, se esperaba %d/%v", tc.in, got, ok, tc.want, tc.found)
+			t.Errorf("parsePercent(%q) = %d/%v, want %d/%v", tc.in, got, ok, tc.want, tc.found)
 		}
 	}
 }
 
-func TestDecodeDevicesRechazaBasura(t *testing.T) {
-	if _, err := decodeDevices([]byte("esto no es json")); err == nil {
-		t.Fatal("aceptó una respuesta ilegible")
+func TestDecodeDevicesRejectsGarbage(t *testing.T) {
+	if _, err := decodeDevices([]byte("this is not json")); err == nil {
+		t.Fatal("accepted an unreadable response")
 	}
 }

@@ -6,14 +6,14 @@ import (
 	"settings-cli/internal/domain/bluetooth"
 )
 
-// AdapterRepository lee y cambia el estado de la radio real.
+// AdapterRepository reads and changes the state of the real radio.
 type AdapterRepository struct{}
 
 var _ bluetooth.AdapterRepository = (*AdapterRepository)(nil)
 
 func NewAdapterRepository() *AdapterRepository { return &AdapterRepository{} }
 
-// Get lee "Powered: yes" de `bluetoothctl show`.
+// Get reads "Powered: yes" from `bluetoothctl show`.
 func (r *AdapterRepository) Get(ctx context.Context) (bluetooth.Adapter, error) {
 	out, err := run(ctx, "show")
 	if err != nil {
@@ -22,8 +22,8 @@ func (r *AdapterRepository) Get(ctx context.Context) (bluetooth.Adapter, error) 
 	return bluetooth.NewAdapter(yes(parseFields(out), "Powered")), nil
 }
 
-// Save enciende o apaga el adaptador. Solo actúa si hay algo que cambiar: un
-// `power on` redundante devuelve error en BlueZ.
+// Save turns the adapter on or off. It only acts if there is something to
+// change: a redundant `power on` returns an error in BlueZ.
 func (r *AdapterRepository) Save(ctx context.Context, a bluetooth.Adapter) error {
 	current, err := r.Get(ctx)
 	if err != nil {

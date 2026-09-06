@@ -5,7 +5,7 @@ import (
 	"settings-cli/internal/shared/ui"
 )
 
-// Footer muestra las teclas disponibles en el contexto actual.
+// Footer shows the keys available in the current context.
 type Footer struct {
 	Keys []ui.Key
 }

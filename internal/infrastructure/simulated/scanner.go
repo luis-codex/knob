@@ -1,5 +1,6 @@
-// Package simulated implementa los puertos de hardware sin hardware detrás.
-// Sirve para desarrollar la interfaz mientras no exista el adaptador real.
+// Package simulated implements the hardware ports with no hardware behind
+// them. It is for developing the interface while the real adapter does not
+// exist.
 package simulated
 
 import (
@@ -9,9 +10,9 @@ import (
 	"settings-cli/internal/domain/bluetooth"
 )
 
-// Scanner devuelve siempre el mismo conjunto de dispositivos. Deduplicar
-// contra lo ya conocido es cosa del caso de uso, no del escáner: un escáner
-// real tampoco sabe qué tienes emparejado.
+// Scanner always returns the same set of devices. Deduplicating against what
+// is already known is the use case's job, not the scanner's: a real scanner
+// does not know what you have paired either.
 type Scanner struct {
 	pool  []bluetooth.Device
 	delay time.Duration
@@ -19,8 +20,8 @@ type Scanner struct {
 
 var _ bluetooth.Scanner = (*Scanner)(nil)
 
-// NewScanner recibe el retardo que simula la búsqueda. Con 0 responde al
-// instante, que es lo que quieren los tests.
+// NewScanner takes the delay that simulates the search. With 0 it responds
+// instantly, which is what the tests want.
 func NewScanner(delay time.Duration) *Scanner {
 	return &Scanner{pool: defaultPool(), delay: delay}
 }
@@ -37,9 +38,9 @@ func (s *Scanner) Scan(ctx context.Context) ([]bluetooth.Device, error) {
 	return out, nil
 }
 
-// defaultPool son los dispositivos "cercanos". Se construyen con los
-// constructores del dominio, así que un dato mal escrito aquí no llega a la
-// aplicación: simplemente no aparece.
+// defaultPool is the "nearby" devices. They are built with the domain
+// constructors, so a bad value here never reaches the application: it simply
+// does not appear.
 func defaultPool() []bluetooth.Device {
 	seed := []struct {
 		address, name string
@@ -47,7 +48,7 @@ func defaultPool() []bluetooth.Device {
 	}{
 		{"AA:BB:CC:DD:EE:FF", "WH-1000XM4", bluetooth.KindHeadphones},
 		{"11:22:33:44:55:66", "MX Master 3S", bluetooth.KindMouse},
-		{"77:88:99:AA:BB:CC", "Teclado K380", bluetooth.KindKeyboard},
+		{"77:88:99:AA:BB:CC", "Keyboard K380", bluetooth.KindKeyboard},
 		{"DE:AD:BE:EF:00:11", "Pixel Buds", bluetooth.KindHeadphones},
 		{"01:23:45:67:89:AB", "JBL Flip 6", bluetooth.KindSpeaker},
 		{"CA:FE:BA:BE:12:34", "Galaxy S24", bluetooth.KindPhone},

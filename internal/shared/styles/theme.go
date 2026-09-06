@@ -1,6 +1,6 @@
-// Package styles concentra los tokens visuales: espaciado, tamaños, colores
-// semánticos y los estilos ya resueltos. Ningún otro paquete declara colores
-// ni paddings.
+// Package styles concentrates the visual tokens: spacing, sizes, semantic
+// colors and the styles already resolved. No other package declares colors or
+// paddings.
 package styles
 
 import (
@@ -11,39 +11,39 @@ import (
 	"settings-cli/internal/shared/icons"
 )
 
-// Tokens de espaciado y tamaño: el ritmo visual de la app.
+// Spacing and size tokens: the app's visual rhythm.
 const (
-	PadX = 1 // padding horizontal de cada sección
-	PadY = 0 // las secciones ya se separan con dividers
+	PadX = 1 // horizontal padding of each section
+	PadY = 0 // sections are already separated by dividers
 
 	SidebarWidth = 26
 	HeaderHeight = 1
 	FooterHeight = 1
-	DividerSize  = 1 // grosor de un divider
+	DividerSize  = 1 // thickness of a divider
 
 	DialogWidth = 50
 )
 
-// Palette nombra los colores por función (Accent, Muted) y no por tono, para
-// que cambiar la paleta no obligue a renombrar.
+// Palette names the colors by role (Accent, Muted) and not by hue, so
+// changing the palette does not force a rename.
 //
-// Los valores oscuros son los de bun.com: fondo casi negro de matiz cálido,
-// tres niveles de texto y un magenta usado con cuentagotas.
+// The dark values are bun.com's: an almost-black warm-tinted background, three
+// text levels and a magenta used sparingly.
 type Palette struct {
 	Text  color.Color
 	Muted color.Color
-	// Faint es el tercer nivel de texto: etiquetas y metadatos que solo se
-	// leen si se buscan.
+	// Faint is the third text level: labels and metadata that are only read if
+	// you look for them.
 	Faint color.Color
 
 	Line color.Color
-	// LineStrong enmarca lo que sí debe destacar, como un modal.
+	// LineStrong frames what does need to stand out, like a modal.
 	LineStrong color.Color
 
 	Accent color.Color
-	// AccentStrong es el acento enfatizado o sobre fondo de acento.
+	// AccentStrong is the accent emphasized or over an accent background.
 	AccentStrong color.Color
-	OnAccent     color.Color // texto legible sobre Accent
+	OnAccent     color.Color // text readable over Accent
 
 	Bg         color.Color
 	BgSelected color.Color
@@ -56,7 +56,7 @@ type Palette struct {
 type headerStyles struct {
 	Base  lipgloss.Style
 	Title lipgloss.Style
-	// Crumb es la sección actual, a la derecha del nombre.
+	// Crumb is the current section, to the right of the name.
 	Crumb lipgloss.Style
 }
 
@@ -65,7 +65,7 @@ type navStyles struct {
 	Group    lipgloss.Style
 	Item     lipgloss.Style
 	Selected lipgloss.Style
-	// Blurred es el item seleccionado sin foco.
+	// Blurred is the selected item without focus.
 	Blurred lipgloss.Style
 }
 
@@ -97,21 +97,21 @@ type bodyStyles struct {
 	Badge  lipgloss.Style
 	Danger lipgloss.Style
 	Note   lipgloss.Style
-	// Section es la etiqueta de una sección dentro de la página.
+	// Section is the label of a section within the page.
 	Section lipgloss.Style
-	// Hint son las pistas de teclado dentro de la página. La tecla va en
-	// texto pleno y no en acento: el acento ya lo lleva el pie, y dos cosas
-	// gritando a la vez no jerarquizan nada.
+	// Hint is the keyboard hints within the page. The key is in plain text and
+	// not in accent: the footer already carries the accent, and two things
+	// shouting at once establish no hierarchy.
 	Hint HintStyles
 }
 
-// HintStyles pinta una lista de pistas de teclado.
+// HintStyles renders a list of keyboard hints.
 type HintStyles struct {
-	// Key es la tecla en sí, que es lo que el usuario busca.
+	// Key is the key itself, which is what the user looks for.
 	Key lipgloss.Style
-	// Action es lo que hace esa tecla.
+	// Action is what that key does.
 	Action lipgloss.Style
-	// Sep separa una pista de la siguiente.
+	// Sep separates one hint from the next.
 	Sep lipgloss.Style
 }
 
@@ -123,7 +123,7 @@ type footerStyles struct {
 type buttonStyles struct {
 	Blurred lipgloss.Style
 	Focused lipgloss.Style
-	// Danger es el botón primario de una acción destructiva con el foco.
+	// Danger is the primary button of a destructive action with focus.
 	Danger lipgloss.Style
 }
 
@@ -136,30 +136,30 @@ type dialogStyles struct {
 	Hint  lipgloss.Style
 }
 
-// Icons son los símbolos de la interfaz.
+// Icons are the interface's symbols.
 //
-// Viven en el tema y no sueltos por el código para que cambiar el juego de
-// símbolos sea tocar un solo sitio. Todos deben ocupar una celda: la rejilla
-// de las filas cuenta con ello.
+// They live in the theme and not loose in the code so that changing the
+// symbol set is touching a single place. They must all take one cell: the row
+// grid counts on it.
 type Icons struct {
-	// Cursor marca la fila bajo el cursor.
+	// Cursor marks the row under the cursor.
 	Cursor string
-	// Active marca el elemento en uso: el dispositivo predeterminado.
+	// Active marks the element in use: the default device.
 	Active string
-	// Paused marca un flujo de audio detenido.
+	// Paused marks a stopped audio stream.
 	Paused string
-	// Playing marca un flujo que suena; la pantalla lo hace parpadear.
+	// Playing marks a playing stream; the screen makes it blink.
 	Playing string
-	// BarOn y BarOff son los tramos lleno y vacío de una barra.
+	// BarOn and BarOff are the full and empty segments of a bar.
 	BarOn  string
 	BarOff string
-	// DividerH y DividerV separan las regiones del layout.
+	// DividerH and DividerV separate the layout regions.
 	DividerH string
 	DividerV string
-	// ScrollThumb y ScrollTrack son la barra de desplazamiento.
+	// ScrollThumb and ScrollTrack are the scrollbar.
 	ScrollThumb string
 	ScrollTrack string
-	// Ellipsis cierra un texto recortado.
+	// Ellipsis closes a clipped text.
 	Ellipsis string
 }
 
@@ -179,7 +179,7 @@ func defaultIcons() Icons {
 	}
 }
 
-// Theme son los estilos resueltos para el fondo de terminal actual.
+// Theme is the styles resolved for the current terminal background.
 type Theme struct {
 	Color Palette
 	Icon  Icons
@@ -196,13 +196,13 @@ type Theme struct {
 	Divider   lipgloss.Style
 }
 
-// Custom son las paletas que el usuario define para cada tipo de fondo.
+// Custom are the palettes the user defines for each background type.
 type Custom struct {
 	Light Palette
 	Dark  Palette
 }
 
-// For elige la paleta que toca según el fondo del terminal.
+// For picks the palette that applies based on the terminal background.
 func (c Custom) For(isDark bool) Palette {
 	if isDark {
 		return c.Dark
@@ -210,10 +210,10 @@ func (c Custom) For(isDark bool) Palette {
 	return c.Light
 }
 
-// Merge devuelve la paleta con los colores no nulos de custom sustituidos.
+// Merge returns the palette with custom's non-nil colors substituted in.
 //
-// Los campos son interfaces, así que el valor cero de Palette significa "no
-// personalizar nada": el usuario declara solo los colores que quiere cambiar.
+// The fields are interfaces, so the zero value of Palette means "customize
+// nothing": the user declares only the colors they want to change.
 func (p Palette) Merge(custom Palette) Palette {
 	set := func(dst *color.Color, src color.Color) {
 		if src != nil {
@@ -238,13 +238,13 @@ func (p Palette) Merge(custom Palette) Palette {
 	return p
 }
 
-// New construye el tema con la paleta por defecto.
+// New builds the theme with the default palette.
 func New(isDark bool) Theme {
 	return NewWithPalette(isDark, Palette{})
 }
 
-// NewWithPalette construye el tema aplicando los colores del usuario sobre los
-// de por defecto. isDark viene de tea.BackgroundColorMsg.IsDark().
+// NewWithPalette builds the theme applying the user's colors over the default
+// ones. isDark comes from tea.BackgroundColorMsg.IsDark().
 func NewWithPalette(isDark bool, custom Palette) Theme {
 	pick := lipgloss.LightDark(isDark)
 
@@ -256,15 +256,15 @@ func NewWithPalette(isDark bool, custom Palette) Theme {
 		Line:       pick(lipgloss.Color("#E2E2E0"), lipgloss.Color("#28282B")),
 		LineStrong: pick(lipgloss.Color("#C9C9C6"), lipgloss.Color("#3E3E42")),
 
-		// Por defecto el acento no es un color, es contraste: blanco sobre
-		// oscuro y negro sobre claro. Así la app no impone una identidad y
-		// quien quiera color lo pone en su theme.toml.
+		// By default the accent is not a color, it is contrast: white on dark
+		// and black on light. That way the app imposes no identity and whoever
+		// wants color puts it in their theme.toml.
 		//
-		// Paletas anteriores, por si se quieren recuperar:
+		// Previous palettes, in case they are wanted back:
 		//	Magenta (bun.com):
 		//	Accent:       pick(lipgloss.Color("#D6006E"), lipgloss.Color("#FF2E97")),
 		//	AccentStrong: pick(lipgloss.Color("#FF2E97"), lipgloss.Color("#FF5CB0")),
-		//	Azul:
+		//	Blue:
 		//	Accent:       pick(lipgloss.Color("#3B4FC4"), lipgloss.Color("#516BEB")),
 		//	AccentStrong: pick(lipgloss.Color("#516BEB"), lipgloss.Color("#7D91F2")),
 		Accent:       pick(lipgloss.Color("#1A1A1A"), lipgloss.Color("#EAEAE8")),
@@ -272,9 +272,9 @@ func NewWithPalette(isDark bool, custom Palette) Theme {
 		OnAccent:     pick(lipgloss.Color("#FFFFFF"), lipgloss.Color("#0D0A0C")),
 
 		Bg: pick(lipgloss.Color("#FAFAF8"), lipgloss.Color("#0D0A0C")),
-		// Con acento neutro el fondo de selección también lo es: un gris que
-		// separa la fila sin teñirla. Con magenta era #FFE7F2 / #280016 y con
-		// azul #E7EBFD / #111634.
+		// With a neutral accent the selection background is neutral too: a grey
+		// that separates the row without tinting it. With magenta it was
+		// #FFE7F2 / #280016 and with blue #E7EBFD / #111634.
 		BgSelected: pick(lipgloss.Color("#EDEDEA"), lipgloss.Color("#1F1F22")),
 
 		Success: pick(lipgloss.Color("#12864F"), lipgloss.Color("#28DC82")),
@@ -282,7 +282,7 @@ func NewWithPalette(isDark bool, custom Palette) Theme {
 		Danger:  pick(lipgloss.Color("#C0392B"), lipgloss.Color("#FF5C5C")),
 	}.Merge(custom)
 
-	// Sin borde propio: la separación entre áreas la ponen los dividers.
+	// No border of its own: the separation between areas is done by the dividers.
 	section := lipgloss.NewStyle().Padding(PadY, PadX)
 
 	return Theme{
@@ -296,9 +296,8 @@ func NewWithPalette(isDark bool, custom Palette) Theme {
 		},
 		Nav: navStyles{
 			Base: section,
-			// La cabecera manda sobre lo que agrupa, así que va en texto
-			// pleno: más tenue que sus items la hacía desaparecer entre
-			// ellos.
+			// The heading outranks what it groups, so it goes in plain text:
+			// fainter than its items made it disappear among them.
 			Group:    lipgloss.NewStyle().Foreground(p.Text).Bold(true),
 			Item:     lipgloss.NewStyle().Foreground(p.Muted),
 			Selected: lipgloss.NewStyle().Foreground(p.AccentStrong).Background(p.BgSelected).Bold(true),
@@ -306,8 +305,8 @@ func NewWithPalette(isDark bool, custom Palette) Theme {
 		},
 		Body: bodyStyles{
 			Base: section,
-			// El título de página va en texto pleno, no en acento: el magenta
-			// se reserva para lo que hay que mirar.
+			// The page title goes in plain text, not accent: the magenta is
+			// reserved for what needs looking at.
 			Title:  lipgloss.NewStyle().Foreground(p.Text).Bold(true),
 			Label:  lipgloss.NewStyle().Foreground(p.Text),
 			Value:  lipgloss.NewStyle().Foreground(p.Muted),
@@ -315,7 +314,7 @@ func NewWithPalette(isDark bool, custom Palette) Theme {
 			Badge:  lipgloss.NewStyle().Foreground(p.Success),
 			Danger: lipgloss.NewStyle().Foreground(p.Danger),
 			Note:   lipgloss.NewStyle().Foreground(p.Faint).Italic(true),
-			// Mismo criterio que Nav.Group: la etiqueta pesa más que su lista.
+			// Same rule as Nav.Group: the label weighs more than its list.
 			Section: lipgloss.NewStyle().Foreground(p.Text).Bold(true),
 			Hint: HintStyles{
 				Key:    lipgloss.NewStyle().Foreground(p.Text).Bold(true),
@@ -325,14 +324,15 @@ func NewWithPalette(isDark bool, custom Palette) Theme {
 		},
 		Footer: footerStyles{
 			Base: section,
-			// En el pie la tecla va en acento: es la salida de emergencia.
+			// In the footer the key goes in accent: it is the emergency exit.
 			Hint: HintStyles{
 				Key:    lipgloss.NewStyle().Foreground(p.Accent).Bold(true),
 				Action: lipgloss.NewStyle().Foreground(p.Muted),
 				Sep:    lipgloss.NewStyle().Foreground(p.Line),
 			},
 		},
-		// El modal lleva borde y fondo: es lo que lo despega del body.
+		// The modal carries a border and background: that is what lifts it off
+		// the body.
 		Dialog: dialogStyles{
 			Box: lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
@@ -348,7 +348,7 @@ func NewWithPalette(isDark bool, custom Palette) Theme {
 		},
 		Button: buttonStyles{
 			Blurred: lipgloss.NewStyle().Foreground(p.Muted).Background(p.BgSelected),
-			// Fondo pleno de acento con texto oscuro: la insignia de bun.com.
+			// Full accent background with dark text: bun.com's badge.
 			Focused: lipgloss.NewStyle().Foreground(p.OnAccent).Background(p.Accent).Bold(true),
 			Danger:  lipgloss.NewStyle().Foreground(p.OnAccent).Background(p.Danger).Bold(true),
 		},

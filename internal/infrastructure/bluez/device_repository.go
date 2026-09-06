@@ -9,15 +9,15 @@ import (
 	"settings-cli/internal/domain/errs"
 )
 
-// Repository expone los dispositivos que conoce BlueZ.
+// Repository exposes the devices BlueZ knows about.
 type Repository struct{}
 
 var _ bluetooth.Repository = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
 
-// List enumera los dispositivos conocidos y consulta el detalle de cada uno.
-// Son N+1 invocaciones, aceptable para una lista de dispositivos Bluetooth.
+// List enumerates the known devices and queries the detail of each one.
+// That is N+1 invocations, acceptable for a list of Bluetooth devices.
 func (r *Repository) List(ctx context.Context) ([]bluetooth.Device, error) {
 	out, err := run(ctx, "devices")
 	if err != nil {
@@ -34,8 +34,8 @@ func (r *Repository) List(ctx context.Context) ([]bluetooth.Device, error) {
 
 		device, err := r.FindByAddress(ctx, address)
 		if err != nil {
-			// Un dispositivo que desaparece entre las dos llamadas no debe
-			// tumbar el listado entero.
+			// A device that disappears between the two calls must not bring
+			// down the whole listing.
 			continue
 		}
 		devices = append(devices, device)
@@ -43,7 +43,7 @@ func (r *Repository) List(ctx context.Context) ([]bluetooth.Device, error) {
 	return devices, nil
 }
 
-// parseDeviceLine lee "Device AA:BB:CC:DD:EE:FF Nombre".
+// parseDeviceLine reads "Device AA:BB:CC:DD:EE:FF Name".
 func parseDeviceLine(line string) (bluetooth.Address, bool) {
 	parts := strings.Fields(strings.TrimSpace(line))
 	if len(parts) < 2 || parts[0] != "Device" {
@@ -65,8 +65,8 @@ func (r *Repository) FindByAddress(ctx context.Context, address bluetooth.Addres
 	return deviceFromInfo(address, out)
 }
 
-// deviceFromInfo traduce la salida de `bluetoothctl info` al dominio. Está
-// separado de la invocación para poder probarlo sin hardware.
+// deviceFromInfo translates the output of `bluetoothctl info` to the domain.
+// It is separate from the invocation so it can be tested without hardware.
 func deviceFromInfo(address bluetooth.Address, out string) (bluetooth.Device, error) {
 	if strings.Contains(out, "not available") {
 		return bluetooth.Device{}, bluetooth.ErrNotFound
@@ -74,10 +74,10 @@ func deviceFromInfo(address bluetooth.Address, out string) (bluetooth.Device, er
 
 	fields := parseFields(out)
 
-	// Alias es el nombre que ve el usuario y puede cambiar; Name es el que
-	// anuncia el dispositivo. Se prefiere Alias, con Name de reserva y la
-	// dirección como último recurso: un dispositivo sin nombre no debe
-	// tumbar el listado.
+	// Alias is the name the user sees and can change; Name is the one the
+	// device advertises. Alias is preferred, with Name as a fallback and the
+	// address as a last resort: a device with no name must not bring down the
+	// listing.
 	name, err := bluetooth.NewName(firstNonEmpty(fields["Alias"], fields["Name"], address.String()))
 	if err != nil {
 		return bluetooth.Device{}, err
@@ -103,11 +103,11 @@ func parseState(fields map[string]string) bluetooth.State {
 	}
 }
 
-// Save reconcilia: compara el estado deseado con el real y emite las órdenes
-// que hagan falta.
+// Save reconciles: it compares the desired state with the real one and emits
+// whatever commands are needed.
 //
-// Es la diferencia de fondo con un almacén. BlueZ no guarda lo que le pases;
-// hay que *hacer* que la realidad coincida.
+// This is the deep difference from a store. BlueZ does not save what you pass
+// it; you have to *make* reality match.
 func (r *Repository) Save(ctx context.Context, d bluetooth.Device) error {
 	current, err := r.FindByAddress(ctx, d.Address())
 	if err != nil {
@@ -136,7 +136,7 @@ func (r *Repository) Save(ctx context.Context, d bluetooth.Device) error {
 		_, err = run(ctx, "pair", address)
 
 	case bluetooth.StateDiscovered:
-		// Olvidar: BlueZ desconecta por su cuenta al quitar el emparejamiento.
+		// Forget: BlueZ disconnects on its own when the pairing is removed.
 		_, err = run(ctx, "remove", address)
 	}
 
@@ -146,13 +146,13 @@ func (r *Repository) Save(ctx context.Context, d bluetooth.Device) error {
 	return r.saveAlias(ctx, d, current)
 }
 
-// saveAlias no está soportado por bluetoothctl, que no expone la propiedad
-// Alias. Cambiar el nombre exigiría hablar con D-Bus directamente.
+// saveAlias is not supported by bluetoothctl, which does not expose the Alias
+// property. Changing the name would require talking to D-Bus directly.
 func (r *Repository) saveAlias(_ context.Context, d, current bluetooth.Device) error {
 	if d.Name().String() == current.Name().String() {
 		return nil
 	}
-	return errs.Conflict("renombrar dispositivos no está soportado con BlueZ")
+	return errs.Conflict("renaming devices is not supported with BlueZ")
 }
 
 func (r *Repository) Delete(ctx context.Context, address bluetooth.Address) error {

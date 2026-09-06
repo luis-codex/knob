@@ -26,7 +26,7 @@ func newDevice(t *testing.T, address, name string) bluetooth.Device {
 	return device
 }
 
-func TestDeviceListConservaOrden(t *testing.T) {
+func TestDeviceListKeepsOrder(t *testing.T) {
 	ctx := context.Background()
 	repo := memory.NewDeviceRepository()
 
@@ -43,18 +43,18 @@ func TestDeviceListConservaOrden(t *testing.T) {
 	}
 	for i, want := range addresses {
 		if got[i].Address().String() != want {
-			t.Fatalf("posición %d = %s, se esperaba %s", i, got[i].Address(), want)
+			t.Fatalf("position %d = %s, want %s", i, got[i].Address(), want)
 		}
 	}
 }
 
-// Guardar la misma dirección actualiza en vez de duplicar, incluso si venía
-// escrita con otro formato.
-func TestDeviceSaveEsUpsert(t *testing.T) {
+// Saving the same address updates instead of duplicating, even when it came
+// written in another format.
+func TestDeviceSaveIsUpsert(t *testing.T) {
 	ctx := context.Background()
 	repo := memory.NewDeviceRepository()
 
-	original := newDevice(t, "aa:bb:cc:dd:ee:ff", "antes")
+	original := newDevice(t, "aa:bb:cc:dd:ee:ff", "before")
 	if err := repo.Save(ctx, original); err != nil {
 		t.Fatalf("Save: %v", err)
 	}
@@ -69,50 +69,50 @@ func TestDeviceSaveEsUpsert(t *testing.T) {
 
 	all, _ := repo.List(ctx)
 	if len(all) != 1 {
-		t.Fatalf("se duplicó: %d dispositivos", len(all))
+		t.Fatalf("duplicated: %d devices", len(all))
 	}
 	if all[0].State() != bluetooth.StatePaired {
-		t.Errorf("estado = %v, se esperaba paired", all[0].State())
+		t.Errorf("state = %v, want paired", all[0].State())
 	}
 }
 
-func TestDeviceSaveRechazaCero(t *testing.T) {
+func TestDeviceSaveRejectsZero(t *testing.T) {
 	err := memory.NewDeviceRepository().Save(context.Background(), bluetooth.Device{})
 	if !errors.Is(err, bluetooth.ErrInvalidAddress) {
-		t.Fatalf("error = %v, se esperaba ErrInvalidAddress", err)
+		t.Fatalf("error = %v, want ErrInvalidAddress", err)
 	}
 }
 
-func TestDeviceFindByAddressYDelete(t *testing.T) {
+func TestDeviceFindByAddressAndDelete(t *testing.T) {
 	ctx := context.Background()
 	repo := memory.NewDeviceRepository()
-	device := newDevice(t, "AA:BB:CC:DD:EE:FF", "buscar")
+	device := newDevice(t, "AA:BB:CC:DD:EE:FF", "lookup")
 
 	if err := repo.Save(ctx, device); err != nil {
 		t.Fatalf("Save: %v", err)
 	}
 
-	// En minúsculas: la normalización debe encontrarlo igual.
+	// Lowercase: normalization must find it just the same.
 	lower, _ := bluetooth.NewAddress("aa:bb:cc:dd:ee:ff")
 	if _, err := repo.FindByAddress(ctx, lower); err != nil {
-		t.Fatalf("FindByAddress con otro formato: %v", err)
+		t.Fatalf("FindByAddress with another format: %v", err)
 	}
 
 	if err := repo.Delete(ctx, device.Address()); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 	if _, err := repo.FindByAddress(ctx, device.Address()); !errors.Is(err, bluetooth.ErrNotFound) {
-		t.Fatalf("tras borrar: %v", err)
+		t.Fatalf("after delete: %v", err)
 	}
 	if err := repo.Delete(ctx, device.Address()); !errors.Is(err, bluetooth.ErrNotFound) {
-		t.Fatalf("borrar dos veces: %v", err)
+		t.Fatalf("delete twice: %v", err)
 	}
 }
 
-func TestDeviceListDevuelveCopia(t *testing.T) {
+func TestDeviceListReturnsCopy(t *testing.T) {
 	ctx := context.Background()
 	repo := memory.NewDeviceRepository()
-	if err := repo.Save(ctx, newDevice(t, "AA:BB:CC:DD:EE:FF", "intacto")); err != nil {
+	if err := repo.Save(ctx, newDevice(t, "AA:BB:CC:DD:EE:FF", "untouched")); err != nil {
 		t.Fatalf("Save: %v", err)
 	}
 
@@ -120,12 +120,12 @@ func TestDeviceListDevuelveCopia(t *testing.T) {
 	first[0] = bluetooth.Device{}
 
 	second, _ := repo.List(ctx)
-	if second[0].Name().String() != "intacto" {
-		t.Errorf("mutar la copia afectó al almacén: %q", second[0].Name())
+	if second[0].Name().String() != "untouched" {
+		t.Errorf("mutating the copy affected the store: %q", second[0].Name())
 	}
 }
 
-func TestDeviceRespetaContextoCancelado(t *testing.T) {
+func TestDeviceRespectsCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 

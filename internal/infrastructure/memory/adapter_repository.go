@@ -7,8 +7,8 @@ import (
 	"settings-cli/internal/domain/bluetooth"
 )
 
-// AdapterRepository implementa bluetooth.AdapterRepository. Guarda un único
-// valor, así que no necesita búsqueda.
+// AdapterRepository implements bluetooth.AdapterRepository. It holds a single
+// value, so it needs no lookup.
 type AdapterRepository struct {
 	mu      sync.RWMutex
 	adapter bluetooth.Adapter
@@ -16,7 +16,7 @@ type AdapterRepository struct {
 
 var _ bluetooth.AdapterRepository = (*AdapterRepository)(nil)
 
-// NewAdapterRepository arranca con el adaptador en el estado dado.
+// NewAdapterRepository starts with the adapter in the given state.
 func NewAdapterRepository(enabled bool) *AdapterRepository {
 	return &AdapterRepository{adapter: bluetooth.NewAdapter(enabled)}
 }

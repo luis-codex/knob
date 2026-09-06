@@ -1,6 +1,6 @@
-// Package ui contiene primitivos de render sin estado: reciben medidas y
-// contenido, devuelven string.
+// Package ui holds stateless render primitives: they take measurements and
+// content, return a string.
 //
-// Criterio frente a components: lo que guarda estado es un component; lo que
-// es función pura de render va aquí.
+// The line against components: anything that holds state is a component;
+// anything that is a pure render function goes here.
 package ui

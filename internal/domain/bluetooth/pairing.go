@@ -5,17 +5,17 @@ import (
 	"fmt"
 )
 
-// passkeyDigits es la longitud del código que muestran ambos extremos.
+// passkeyDigits is the length of the code both ends display.
 const passkeyDigits = 6
 
-// Passkey es el código que los dos dispositivos deben ver igual. Puede no
-// haberlo: el emparejamiento "Just Works" no muestra ninguno.
+// Passkey is the code both devices must see identically. There may be none:
+// "Just Works" pairing shows no code.
 type Passkey struct {
 	value   int
 	present bool
 }
 
-// NewPasskey acepta códigos de 6 dígitos.
+// NewPasskey accepts 6-digit codes.
 func NewPasskey(code int) (Passkey, error) {
 	if code < 0 || code > 999999 {
 		return Passkey{}, ErrInvalidPasskey
@@ -23,13 +23,13 @@ func NewPasskey(code int) (Passkey, error) {
 	return Passkey{value: code, present: true}, nil
 }
 
-// NoPasskey es el emparejamiento sin confirmación de código.
+// NoPasskey is pairing without code confirmation.
 func NoPasskey() Passkey { return Passkey{} }
 
 func (p Passkey) Present() bool { return p.present }
 
-// String rellena con ceros a la izquierda: un código es de 6 dígitos aunque
-// empiece por cero.
+// String left-pads with zeros: a code is 6 digits even when it starts with
+// zero.
 func (p Passkey) String() string {
 	if !p.present {
 		return ""
@@ -37,11 +37,11 @@ func (p Passkey) String() string {
 	return fmt.Sprintf("%0*d", passkeyDigits, p.value)
 }
 
-// PairingRequest es una solicitud de emparejamiento entrante: otro
-// dispositivo pide emparejarse con este equipo.
+// PairingRequest is an incoming pairing request: another device asks to pair
+// with this machine.
 //
-// No es una entidad persistente sino un hecho puntual, así que no tiene
-// repositorio: llega, se responde y se acaba.
+// It is not a persistent entity but a one-off fact, so it has no repository:
+// it arrives, is answered and is over.
 type PairingRequest struct {
 	address Address
 	name    Name
@@ -66,16 +66,16 @@ func (r PairingRequest) Passkey() Passkey { return r.passkey }
 
 func (r PairingRequest) IsZero() bool { return r.address.IsZero() }
 
-// PairingAgent atiende las solicitudes de emparejamiento entrantes.
+// PairingAgent handles incoming pairing requests.
 //
-// Es el primer puerto de entrada del sistema: el resto se consultan, este
-// empuja. Por eso entrega un canal en vez de devolver un valor.
+// It is the system's first input port: the rest are queried, this one pushes.
+// That is why it hands back a channel instead of returning a value.
 type PairingAgent interface {
-	// Requests entrega las solicitudes conforme llegan. El canal se cierra
-	// cuando el contexto termina.
+	// Requests delivers requests as they arrive. The channel closes when the
+	// context ends.
 	Requests(ctx context.Context) (<-chan PairingRequest, error)
-	// Accept confirma el emparejamiento solicitado.
+	// Accept confirms the requested pairing.
 	Accept(ctx context.Context, address Address) error
-	// Reject lo rechaza.
+	// Reject turns it down.
 	Reject(ctx context.Context, address Address) error
 }

@@ -1,5 +1,5 @@
-// Package app es el único tea.Model de la aplicación: mantiene el foco,
-// enruta el teclado y compone el layout.
+// Package app is the application's single tea.Model: it keeps focus, routes
+// the keyboard and composes the layout.
 package app
 
 import (
@@ -17,31 +17,30 @@ import (
 	"settings-cli/internal/shared/ui"
 )
 
-// Contratos opcionales de las páginas. Sin exportar: los declara quien los
-// consume.
+// Optional page contracts. Unexported: declared by whoever consumes them.
 type (
-	// initializer necesita cargar algo al arrancar.
+	// initializer needs to load something at startup.
 	initializer interface {
 		Init() tea.Cmd
 	}
 
-	// keyConsumer gestiona su propio teclado. true = tecla consumida.
+	// keyConsumer handles its own keyboard. true = key consumed.
 	keyConsumer interface {
 		HandleKey(msg tea.KeyPressMsg) (bool, tea.Cmd)
 	}
 
-	// msgConsumer aplica los resultados de sus comandos.
+	// msgConsumer applies the results of its commands.
 	msgConsumer interface {
 		HandleMsg(msg tea.Msg) tea.Cmd
 	}
 
-	// overlayProvider expone el modal a componer sobre el body, o nil.
+	// overlayProvider exposes the modal to compose over the body, or nil.
 	overlayProvider interface {
 		Overlay() layouts.Section
 	}
 )
 
-// focus indica quién recibe el teclado.
+// focus tells who receives the keyboard.
 type focus int
 
 const (
@@ -51,14 +50,14 @@ const (
 
 type Model struct {
 	theme styles.Theme
-	// palette son los colores del usuario, con una variante por fondo. Se
-	// guardan porque el tema se reconstruye al saber si el fondo es claro u
-	// oscuro.
+	// palette is the user's colors, with one variant per background. It is
+	// kept because the theme is rebuilt once the background is known to be
+	// light or dark.
 	palette styles.Custom
 	layout  layouts.App
 	nav     components.Nav
 	router  map[string]layouts.Section
-	// fallback evita el nil deref del layout ante un ID desconocido.
+	// fallback avoids the layout's nil deref on an unknown ID.
 	fallback layouts.Section
 	focus    focus
 
@@ -66,13 +65,13 @@ type Model struct {
 	height int
 }
 
-// New recibe el cableado ya hecho: el contexto que acota los procesos que
-// escuchan al sistema, la paleta del usuario y los casos de uso. Todo eso lo
-// decide el composition root, no la interfaz.
+// New takes the wiring already done: the context that bounds the processes
+// listening to the system, the user's palette and the use cases. All of that
+// is decided by the composition root, not the interface.
 func New(ctx context.Context, custom styles.Custom, deviceSvc *devices.Service, soundSvc *sound.Service) Model {
 	return Model{
 		palette:  custom,
-		theme:    styles.NewWithPalette(true, custom.For(true)), // provisional hasta el BackgroundColorMsg
+		theme:    styles.NewWithPalette(true, custom.For(true)), // provisional until the BackgroundColorMsg
 		nav:      components.NewNav(navGroups()...),
 		router:   newRouter(ctx, deviceSvc, soundSvc),
 		fallback: pages.NewFallback("Settings"),
@@ -80,7 +79,7 @@ func New(ctx context.Context, custom styles.Custom, deviceSvc *devices.Service, 
 }
 
 func (m Model) Init() tea.Cmd {
-	// RequestBackgroundColor elige la paleta; cada página carga lo suyo.
+	// RequestBackgroundColor picks the palette; each page loads its own thing.
 	cmds := []tea.Cmd{tea.RequestBackgroundColor}
 	for _, page := range m.router {
 		if p, ok := page.(initializer); ok {
@@ -107,9 +106,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, m.broadcast(msg)
 }
 
-// broadcast reparte los mensajes que no son de la app entre las páginas. Va a
-// todas y no solo a la activa porque un comando puede terminar después de
-// navegar fuera; cada página ignora los tipos que no son suyos.
+// broadcast hands the messages that are not the app's to the pages. It goes to
+// all of them and not just the active one because a command can finish after
+// navigating away; each page ignores the types that are not its own.
 func (m Model) broadcast(msg tea.Msg) tea.Cmd {
 	var cmds []tea.Cmd
 	for _, page := range m.router {
@@ -121,7 +120,7 @@ func (m Model) broadcast(msg tea.Msg) tea.Cmd {
 }
 
 func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	// ctrl+c sale siempre, incluso con un modal abierto.
+	// ctrl+c always quits, even with a modal open.
 	if msg.String() == "ctrl+c" {
 		return m, tea.Quit
 	}
@@ -133,7 +132,8 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handleBodyKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	// La página va primero: así escribir "q" en un campo no cierra la app.
+	// The page goes first: that way typing "q" in a field does not close the
+	// app.
 	if page, ok := m.currentPage().(keyConsumer); ok {
 		if consumed, cmd := page.HandleKey(msg); consumed {
 			return m, cmd
@@ -158,7 +158,7 @@ func (m Model) handleSidebarKey(key string) (tea.Model, tea.Cmd) {
 	case "down", "j":
 		m.nav = m.nav.Next()
 	case "tab", "enter", "right", "l":
-		// Entrar solo tiene sentido si la página gestiona teclado.
+		// Entering only makes sense if the page handles the keyboard.
 		if _, ok := m.currentPage().(keyConsumer); ok {
 			m.focus = focusBody
 		}
@@ -166,7 +166,7 @@ func (m Model) handleSidebarKey(key string) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// currentPage resuelve qué página toca según la selección del sidebar.
+// currentPage resolves which page is due based on the sidebar selection.
 func (m Model) currentPage() layouts.Section {
 	if page, ok := m.router[m.nav.Selected().ID]; ok {
 		return page
@@ -176,10 +176,10 @@ func (m Model) currentPage() layouts.Section {
 
 func (m Model) View() tea.View {
 	v := tea.NewView("")
-	v.AltScreen = true // en v2 el altscreen es del View, no del Program
+	v.AltScreen = true // in v2 the alt-screen belongs to the View, not the Program
 
 	if m.width == 0 {
-		return v // aún no llegó el primer WindowSizeMsg
+		return v // the first WindowSizeMsg has not arrived yet
 	}
 
 	page := m.currentPage()
@@ -197,16 +197,16 @@ func (m Model) View() tea.View {
 	return v
 }
 
-// keys son las pistas globales. Dentro de una página solo se anuncia la
-// salida: el resto de teclas las explica la propia página.
+// keys are the global hints. Inside a page only the exit is announced: the
+// rest of the keys are explained by the page itself.
 func (m Model) keys() []ui.Key {
 	if m.focus == focusBody {
-		return []ui.Key{{Name: icons.Escape, Action: "volver al menú"}}
+		return []ui.Key{{Name: icons.Escape, Action: "back to the menu"}}
 	}
 
 	return []ui.Key{
-		{Name: icons.UpDown, Action: "navegar"},
-		{Name: icons.Enter, Action: "entrar"},
-		{Name: "q", Action: "salir"},
+		{Name: icons.UpDown, Action: "navigate"},
+		{Name: icons.Enter, Action: "enter"},
+		{Name: "q", Action: "quit"},
 	}
 }

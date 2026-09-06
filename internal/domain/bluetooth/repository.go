@@ -2,25 +2,25 @@ package bluetooth
 
 import "context"
 
-// Repository es el puerto de persistencia: lo declara el dominio y lo
-// implementa infraestructura.
+// Repository is the persistence port: the domain declares it and
+// infrastructure implements it.
 type Repository interface {
-	// Save inserta o actualiza el dispositivo.
+	// Save inserts or updates the device.
 	Save(ctx context.Context, d Device) error
-	// Delete elimina por dirección. Devuelve ErrNotFound si no existe.
+	// Delete removes by address. Returns ErrNotFound if it does not exist.
 	Delete(ctx context.Context, address Address) error
-	// FindByAddress devuelve ErrNotFound si no existe.
+	// FindByAddress returns ErrNotFound if it does not exist.
 	FindByAddress(ctx context.Context, address Address) (Device, error)
-	// List devuelve los dispositivos en orden de descubrimiento.
+	// List returns the devices in discovery order.
 	List(ctx context.Context) ([]Device, error)
 }
 
-// AdapterRepository guarda el estado de la radio. Es un puerto aparte porque
-// el adaptador es otro agregado: no comparte ciclo de vida con los
-// dispositivos.
+// AdapterRepository holds the radio's state. It is a separate port because the
+// adapter is another aggregate: it does not share a lifecycle with the
+// devices.
 type AdapterRepository interface {
-	// Get devuelve el adaptador. Nunca falla por no existir: si no hay nada
-	// guardado devuelve uno apagado.
+	// Get returns the adapter. It never fails for not existing: if nothing is
+	// stored it returns one that is off.
 	Get(ctx context.Context) (Adapter, error)
 	Save(ctx context.Context, a Adapter) error
 }

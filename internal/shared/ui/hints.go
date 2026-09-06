@@ -7,16 +7,17 @@ import (
 	"settings-cli/internal/shared/styles"
 )
 
-// Key es una pista de teclado: la tecla y lo que hace.
+// Key is a keyboard hint: the key and what it does.
 type Key struct {
 	Name   string
 	Action string
 }
 
-// Hints pinta una lista de pistas.
+// Hints renders a list of hints.
 //
-// La tecla se pinta aparte de su descripción porque son cosas distintas: quien
-// no sepa cómo salir busca la tecla, no la frase.
+// The key is rendered apart from its description because they are different
+// things: someone who does not know how to quit looks for the key, not the
+// phrase.
 func Hints(s styles.HintStyles, keys ...Key) string {
 	parts := make([]string, 0, len(keys))
 	for _, k := range keys {

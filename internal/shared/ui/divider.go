@@ -6,7 +6,7 @@ import (
 	"settings-cli/internal/shared/styles"
 )
 
-// HDivider dibuja una línea horizontal de ancho width.
+// HDivider draws a horizontal line of the given width.
 func HDivider(t styles.Theme, width int) string {
 	if width <= 0 {
 		return ""
@@ -14,7 +14,7 @@ func HDivider(t styles.Theme, width int) string {
 	return t.Divider.Render(strings.Repeat(t.Icon.DividerH, width))
 }
 
-// VDivider dibuja una columna vertical de height filas.
+// VDivider draws a vertical column of the given height in rows.
 func VDivider(t styles.Theme, height int) string {
 	if height <= 0 {
 		return ""

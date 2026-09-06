@@ -9,7 +9,7 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// writeTheme deja un theme.toml en un directorio de configuración temporal.
+// writeTheme drops a theme.toml in a temporary config directory.
 func writeTheme(t *testing.T, content string) {
 	t.Helper()
 
@@ -25,42 +25,42 @@ func writeTheme(t *testing.T, content string) {
 	}
 }
 
-func TestSinFicheroNoEsError(t *testing.T) {
+func TestNoFileIsNotAnError(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 
 	custom, errs := LoadTheme()
 	if len(errs) != 0 {
-		t.Fatalf("no tener tema no debe dar errores: %v", errs)
+		t.Fatalf("having no theme must not produce errors: %v", errs)
 	}
 	if custom.Dark.Accent != nil || custom.Light.Accent != nil {
-		t.Error("sin fichero no debe haber colores personalizados")
+		t.Error("with no file there must be no custom colors")
 	}
 }
 
-func TestSobrescrituraParcial(t *testing.T) {
+func TestPartialOverride(t *testing.T) {
 	writeTheme(t, `
-# Solo el acento; el resto se queda por defecto.
+# Only the accent; the rest stays at the default.
 [dark]
 accent = "#516BEB"
 `)
 
 	custom, errs := LoadTheme()
 	if len(errs) != 0 {
-		t.Fatalf("errores inesperados: %v", errs)
+		t.Fatalf("unexpected errors: %v", errs)
 	}
 
 	if custom.Dark.Accent != lipgloss.Color("#516BEB") {
 		t.Errorf("accent = %v", custom.Dark.Accent)
 	}
 	if custom.Dark.Text != nil {
-		t.Error("un color no declarado debe quedar nulo para que Merge use el de por defecto")
+		t.Error("an undeclared color must stay nil so Merge uses the default")
 	}
 	if custom.Light.Accent != nil {
-		t.Error("declarar [dark] no debe tocar [light]")
+		t.Error("declaring [dark] must not touch [light]")
 	}
 }
 
-func TestVariantesIndependientes(t *testing.T) {
+func TestVariantsAreIndependent(t *testing.T) {
 	writeTheme(t, `
 [light]
 accent = "#3B4FC4"
@@ -71,56 +71,56 @@ accent = "#516BEB"
 
 	custom, errs := LoadTheme()
 	if len(errs) != 0 {
-		t.Fatalf("errores inesperados: %v", errs)
+		t.Fatalf("unexpected errors: %v", errs)
 	}
 	if custom.For(true) != custom.Dark || custom.For(false) != custom.Light {
-		t.Error("For no elige la variante correcta")
+		t.Error("For does not pick the right variant")
 	}
 	if custom.Light.Accent == custom.Dark.Accent {
-		t.Error("las dos variantes salieron iguales")
+		t.Error("the two variants came out identical")
 	}
 }
 
-// Un color inválido no debe tumbar el resto del tema.
-func TestColorInvalidoNoDescartaLosDemas(t *testing.T) {
+// An invalid color must not bring down the rest of the theme.
+func TestInvalidColorDoesNotDropTheOthers(t *testing.T) {
 	writeTheme(t, `
 [dark]
-accent = "azul"
+accent = "blue"
 text = "#EAEAE8"
 danger = "#GG0000"
 `)
 
 	custom, errs := LoadTheme()
 	if len(errs) != 2 {
-		t.Fatalf("se esperaban 2 errores, hubo %d: %v", len(errs), errs)
+		t.Fatalf("expected 2 errors, got %d: %v", len(errs), errs)
 	}
 	for _, err := range errs {
 		if !strings.Contains(err.Error(), "[dark]") {
-			t.Errorf("el error no dice de qué sección viene: %v", err)
+			t.Errorf("the error does not say which section it comes from: %v", err)
 		}
 	}
 
 	if custom.Dark.Text != lipgloss.Color("#EAEAE8") {
-		t.Error("un color válido se perdió por culpa de otro inválido")
+		t.Error("a valid color was lost because of an invalid one")
 	}
 	if custom.Dark.Accent != nil || custom.Dark.Danger != nil {
-		t.Error("los colores inválidos deben quedar nulos, no a medias")
+		t.Error("invalid colors must stay nil, not half-applied")
 	}
 }
 
-func TestTomlRotoNoTumbaLaApp(t *testing.T) {
+func TestBrokenTomlDoesNotBringDownTheApp(t *testing.T) {
 	writeTheme(t, "[dark\naccent = ")
 
 	custom, errs := LoadTheme()
 	if len(errs) == 0 {
-		t.Fatal("un TOML roto debe avisar")
+		t.Fatal("broken TOML must be reported")
 	}
 	if custom.Dark.Accent != nil {
-		t.Error("con el fichero roto no debe haber colores")
+		t.Error("with the file broken there must be no colors")
 	}
 }
 
-func TestAceptaTresYSeisDigitos(t *testing.T) {
+func TestAcceptsThreeAndSixDigits(t *testing.T) {
 	writeTheme(t, `
 [dark]
 accent = "#fff"
@@ -129,22 +129,22 @@ text = "#EAEAE8"
 
 	custom, errs := LoadTheme()
 	if len(errs) != 0 {
-		t.Fatalf("errores inesperados: %v", errs)
+		t.Fatalf("unexpected errors: %v", errs)
 	}
 	if custom.Dark.Accent != lipgloss.Color("#fff") {
 		t.Errorf("accent = %v", custom.Dark.Accent)
 	}
 }
 
-// La ruta debe respetar XDG_CONFIG_HOME.
-func TestThemePathRespetaXDG(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", "/tmp/xdg-de-prueba")
+// The path must respect XDG_CONFIG_HOME.
+func TestThemePathRespectsXDG(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "/tmp/xdg-test")
 
 	path, err := ThemePath()
 	if err != nil {
 		t.Fatalf("ThemePath: %v", err)
 	}
-	if want := filepath.Join("/tmp/xdg-de-prueba", appDir, themeFile); path != want {
-		t.Errorf("ruta = %q, se esperaba %q", path, want)
+	if want := filepath.Join("/tmp/xdg-test", appDir, themeFile); path != want {
+		t.Errorf("path = %q, want %q", path, want)
 	}
 }

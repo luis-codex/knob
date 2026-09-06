@@ -9,14 +9,14 @@ import (
 	"settings-cli/internal/domain/errs"
 )
 
-// StreamRepository expone los flujos de audio de las aplicaciones.
+// StreamRepository exposes the applications' audio streams.
 type StreamRepository struct{}
 
 var _ audio.StreamRepository = (*StreamRepository)(nil)
 
 func NewStreamRepository() *StreamRepository { return &StreamRepository{} }
 
-// jsonStream es un sink-input de pactl.
+// jsonStream is a pactl sink-input.
 type jsonStream struct {
 	Index      int                    `json:"index"`
 	Mute       bool                   `json:"mute"`
@@ -25,8 +25,8 @@ type jsonStream struct {
 	Properties map[string]any         `json:"properties"`
 }
 
-// property lee una propiedad de texto. El mapa viene con tipos mezclados y
-// las ausentes llegan como null.
+// property reads a text property. The map comes with mixed types and absent
+// ones arrive as null.
 func (s jsonStream) property(key string) string {
 	if value, ok := s.Properties[key].(string); ok {
 		return value
@@ -42,7 +42,7 @@ func (r *StreamRepository) List(ctx context.Context) ([]audio.Stream, error) {
 
 	var decoded []jsonStream
 	if err := json.Unmarshal(raw, &decoded); err != nil {
-		return nil, errs.Wrap(errs.KindConflict, "respuesta ilegible del servidor de sonido", err)
+		return nil, errs.Wrap(errs.KindConflict, "unreadable response from the sound server", err)
 	}
 
 	streams := make([]audio.Stream, 0, len(decoded))
@@ -68,7 +68,7 @@ func (r *StreamRepository) FindByID(ctx context.Context, id audio.StreamID) (aud
 	return audio.Stream{}, audio.ErrStreamNotFound
 }
 
-// Save aplica volumen y silencio. Ambos comandos son idempotentes.
+// Save applies volume and mute. Both commands are idempotent.
 func (r *StreamRepository) Save(ctx context.Context, s audio.Stream) error {
 	if s.IsZero() {
 		return audio.ErrInvalidStreamID
@@ -88,21 +88,21 @@ func (r *StreamRepository) Save(ctx context.Context, s audio.Stream) error {
 	return err
 }
 
-// toStream traduce un sink-input al dominio. Devuelve false si no describe un
-// flujo utilizable.
+// toStream translates a sink-input to the domain. It returns false if it does
+// not describe a usable stream.
 func toStream(s jsonStream) (audio.Stream, bool) {
 	id, err := audio.NewStreamID(s.Index)
 	if err != nil {
 		return audio.Stream{}, false
 	}
 
-	// application.name es lo que reconoce el usuario. Sin él se recurre al
-	// binario y, en último caso, al índice: un flujo sin nombre debe salir
-	// igualmente en el mezclador.
+	// application.name is what the user recognizes. Without it we fall back to
+	// the binary and, as a last resort, the index: a stream with no name must
+	// still show up in the mixer.
 	app, err := audio.NewName(firstNonEmpty(
 		s.property("application.name"),
 		s.property("application.process.binary"),
-		"flujo "+strconv.Itoa(s.Index),
+		"stream "+strconv.Itoa(s.Index),
 	))
 	if err != nil {
 		return audio.Stream{}, false

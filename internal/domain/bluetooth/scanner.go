@@ -2,11 +2,11 @@ package bluetooth
 
 import "context"
 
-// Scanner descubre dispositivos cercanos.
+// Scanner discovers nearby devices.
 //
-// Es un puerto de salida como Repository, pero hacia el hardware y no hacia
-// almacenamiento: devuelve lo que hay alrededor, sin saber qué se conoce ya.
+// It is an output port like Repository, but toward the hardware rather than
+// storage: it returns what is around, without knowing what is already known.
 type Scanner interface {
-	// Scan devuelve los dispositivos visibles, todos en StateDiscovered.
+	// Scan returns the visible devices, all in StateDiscovered.
 	Scan(ctx context.Context) ([]Device, error)
 }

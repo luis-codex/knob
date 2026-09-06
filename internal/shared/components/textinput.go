@@ -6,8 +6,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// TextInput es un buffer de texto de una línea. Solo estado: el dibujo lo
-// hace ui.TextField.
+// TextInput is a single-line text buffer. State only: the drawing is done by
+// ui.TextField.
 type TextInput struct {
 	value string
 }
@@ -18,7 +18,7 @@ func NewTextInput(value string) TextInput {
 
 func (i TextInput) Value() string { return i.value }
 
-// Trimmed es el valor sin espacios en los extremos.
+// Trimmed is the value with leading and trailing spaces removed.
 func (i TextInput) Trimmed() string { return strings.TrimSpace(i.value) }
 
 func (i TextInput) Insert(s string) TextInput {
@@ -38,15 +38,15 @@ func (i TextInput) Clear() TextInput {
 	return i
 }
 
-// TypeKey aplica una pulsación al buffer. false significa que no era texto y
-// el llamante debe tratarla como comando.
+// TypeKey applies a keypress to the buffer. false means it was not text and
+// the caller must treat it as a command.
 func (i TextInput) TypeKey(msg tea.KeyPressMsg) (TextInput, bool) {
 	if msg.String() == "backspace" {
 		return i.Backspace(), true
 	}
 
-	// Text solo trae contenido en teclas imprimibles. Se descartan las que
-	// llevan modificador para que un atajo no acabe escrito.
+	// Text only carries content on printable keys. Those with a modifier are
+	// dropped so a shortcut does not end up typed.
 	if msg.Text != "" && msg.Mod&(tea.ModCtrl|tea.ModAlt|tea.ModMeta) == 0 {
 		return i.Insert(msg.Text), true
 	}

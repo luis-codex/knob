@@ -10,19 +10,19 @@ import (
 	"settings-cli/internal/shared/layouts"
 )
 
-// IDs de navegación: la clave que une sidebar y router.
+// Navigation IDs: the key that ties the sidebar and the router together.
 const (
 	navWiFi      = "network.wifi"
 	navBluetooth = "network.bluetooth"
 	navSound     = "sound.devices"
 )
 
-// navGroups es el menú del sidebar.
+// navGroups is the sidebar menu.
 //
-// "Network & Bluetooth" (navWiFi y navBluetooth) no se lista mientras las dos
-// pantallas estén a medias. Las páginas siguen montadas en newRouter, así que
-// para volver a enseñarlas basta con reponer aquí su NavGroup con esos dos IDs
-// y las etiquetas "Wifi & Network" y "Bluetooth".
+// "Network & Bluetooth" (navWiFi and navBluetooth) is not listed while both
+// screens are half-done. The pages stay mounted in newRouter, so to show them
+// again it is enough to put their NavGroup back here with those two IDs and the
+// labels "Wifi & Network" and "Bluetooth".
 func navGroups() []components.NavGroup {
 	return []components.NavGroup{
 		{
@@ -34,8 +34,8 @@ func navGroups() []components.NavGroup {
 	}
 }
 
-// newRouter construye las páginas una vez, de modo que conservan su estado
-// al navegar fuera y volver.
+// newRouter builds the pages once, so they keep their state when navigating
+// away and back.
 func newRouter(ctx context.Context, deviceSvc *devices.Service, soundSvc *sound.Service) map[string]layouts.Section {
 	return map[string]layouts.Section{
 		navSound:     pages.NewAudio(ctx, "Audio & mic", soundSvc),

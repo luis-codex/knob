@@ -17,11 +17,11 @@ import (
 	btui "settings-cli/internal/ui/bluetooth"
 )
 
-// developmentNote avisa de lo que aún no hace esta pantalla. Se quita cuando
-// el emparejamiento entrante esté implementado.
-const developmentNote = "En desarrollo · falta el emparejamiento entrante"
+// developmentNote warns about what this screen does not do yet. It goes away
+// when incoming pairing is implemented.
+const developmentNote = "In development · incoming pairing is missing"
 
-// devicePending recuerda qué aplicar cuando se acepte el modal.
+// devicePending remembers what to apply when the modal is accepted.
 type devicePending int
 
 const (
@@ -40,7 +40,7 @@ type (
 	devicesFailedMsg struct{ err error }
 )
 
-// Bluetooth administra los dispositivos emparejados.
+// Bluetooth manages the paired devices.
 type Bluetooth struct {
 	title string
 	svc   *devices.Service
@@ -56,11 +56,11 @@ type Bluetooth struct {
 	pending     devicePending
 	pendingAddr string
 
-	// scanning bloquea la acción mientras la búsqueda está en curso; el
-	// comando corre en su goroutine y la interfaz sigue respondiendo.
+	// scanning blocks the action while the search is in progress; the command
+	// runs in its goroutine and the interface keeps responding.
 	scanning bool
-	// lastScan es cuántos dispositivos añadió la última búsqueda. -1 es "aún
-	// no se ha buscado", que no es lo mismo que haber encontrado cero.
+	// lastScan is how many devices the last search added. -1 is "not searched
+	// yet", which is not the same as having found zero.
 	lastScan int
 	failure  string
 }
@@ -71,7 +71,7 @@ func NewBluetooth(title string, svc *devices.Service) *Bluetooth {
 
 func (p *Bluetooth) Init() tea.Cmd { return p.reload() }
 
-// --- comandos ---------------------------------------------------------------
+// --- commands -------------------------------------------------------------
 
 func (p *Bluetooth) reload() tea.Cmd {
 	svc, query := p.svc, p.search.Trimmed()
@@ -92,7 +92,7 @@ func (p *Bluetooth) reload() tea.Cmd {
 	}
 }
 
-// scan busca dispositivos cercanos.
+// scan looks for nearby devices.
 func (p *Bluetooth) scan() tea.Cmd {
 	svc := p.svc
 
@@ -105,7 +105,7 @@ func (p *Bluetooth) scan() tea.Cmd {
 	}
 }
 
-// toggleAdapter enciende o apaga la radio según su estado actual.
+// toggleAdapter turns the radio on or off depending on its current state.
 func (p *Bluetooth) toggleAdapter() tea.Cmd {
 	svc, enabled := p.svc, p.adapter.Enabled()
 
@@ -120,9 +120,9 @@ func (p *Bluetooth) toggleAdapter() tea.Cmd {
 	})
 }
 
-// deviceMutate envuelve una operación de escritura: si va bien devuelve
-// deviceSavedMsg para que la página se relea, y si falla, devicesFailedMsg.
-// Cada página tiene la suya porque el mensaje de éxito es distinto.
+// deviceMutate wraps a write operation: on success it returns deviceSavedMsg
+// so the page re-reads itself, and on failure, devicesFailedMsg. Each page has
+// its own because the success message differs.
 func deviceMutate(op func(context.Context) error) tea.Cmd {
 	return func() tea.Msg {
 		if err := op(context.Background()); err != nil {
@@ -132,8 +132,8 @@ func deviceMutate(op func(context.Context) error) tea.Cmd {
 	}
 }
 
-// advance ejecuta la acción natural para el estado actual: emparejar lo
-// descubierto, conectar lo emparejado y desconectar lo conectado.
+// advance runs the natural action for the current state: pair what is
+// discovered, connect what is paired and disconnect what is connected.
 func (p *Bluetooth) advance(d bluetooth.Device) tea.Cmd {
 	svc, addr := p.svc, d.Address().String()
 
@@ -151,7 +151,7 @@ func (p *Bluetooth) advance(d bluetooth.Device) tea.Cmd {
 	})
 }
 
-// --- estado -----------------------------------------------------------------
+// --- state --------------------------------------------------------------
 
 func (p *Bluetooth) selected() (bluetooth.Device, bool) {
 	if cursor := p.list.Cursor(); cursor < len(p.items) {
@@ -160,10 +160,10 @@ func (p *Bluetooth) selected() (bluetooth.Device, bool) {
 	return bluetooth.Device{}, false
 }
 
-// --- modales ----------------------------------------------------------------
+// --- modals -------------------------------------------------------------
 
 func (p *Bluetooth) openRename(d bluetooth.Device) {
-	p.dialog = components.NewFormDialog("Renombrar dispositivo", "Nombre", "¿Cómo se llama?", "Guardar").
+	p.dialog = components.NewFormDialog("Rename device", "Name", "What is it called?", "Save").
 		WithValue(d.Name().String()).
 		Open()
 	p.pending, p.pendingAddr = devicePendingRename, d.Address().String()
@@ -171,15 +171,15 @@ func (p *Bluetooth) openRename(d bluetooth.Device) {
 
 func (p *Bluetooth) openRemove(d bluetooth.Device) {
 	p.dialog = components.NewConfirmDialog(
-		"Olvidar dispositivo",
-		"Se va a olvidar «"+d.Name().String()+"».\nHabrá que volver a emparejarlo.",
-		"Olvidar",
+		"Forget device",
+		"\""+d.Name().String()+"\" will be forgotten.\nYou will have to pair it again.",
+		"Forget",
 	).Dangerous().Open()
 	p.pending, p.pendingAddr = devicePendingRemove, d.Address().String()
 }
 
-// resolve traduce la acción del modal en un comando. El diálogo no se cierra
-// aquí: sigue abierto hasta que la operación confirma.
+// resolve turns the modal's action into a command. The dialog is not closed
+// here: it stays open until the operation confirms.
 func (p *Bluetooth) resolve(action components.DialogAction) tea.Cmd {
 	switch action {
 	case components.DialogNone:
@@ -217,7 +217,7 @@ func (p *Bluetooth) Overlay() layouts.Section {
 	return p.dialog
 }
 
-// --- mensajes ---------------------------------------------------------------
+// --- messages -----------------------------------------------------------
 
 func (p *Bluetooth) HandleMsg(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
@@ -241,8 +241,8 @@ func (p *Bluetooth) HandleMsg(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-// fail decide dónde va el error. Un fallo de validación pertenece al
-// formulario que lo provocó; el resto va al cuerpo de la página.
+// fail decides where the error goes. A validation failure belongs to the form
+// that caused it; the rest goes to the page body.
 func (p *Bluetooth) fail(err error) {
 	if p.dialog.IsOpen() && errs.IsInvalid(err) {
 		p.dialog = p.dialog.WithError(err.Error())
@@ -252,7 +252,7 @@ func (p *Bluetooth) fail(err error) {
 	p.failure = err.Error()
 }
 
-// --- teclado ----------------------------------------------------------------
+// --- keyboard ---------------------------------------------------------------
 
 func (p *Bluetooth) HandleKey(msg tea.KeyPressMsg) (bool, tea.Cmd) {
 	switch {
@@ -328,7 +328,7 @@ func (p *Bluetooth) handleSearchKey(msg tea.KeyPressMsg) tea.Cmd {
 	return p.reload()
 }
 
-// --- render -----------------------------------------------------------------
+// --- render -------------------------------------------------------------
 
 func (p *Bluetooth) View(t styles.Theme, width, height int) string {
 	inner := width - t.Body.Base.GetHorizontalFrameSize()
@@ -342,9 +342,9 @@ func (p *Bluetooth) View(t styles.Theme, width, height int) string {
 		btui.Adapter(t, p.adapter.Enabled(), inner),
 		"",
 		ui.TextField(t, ui.TextFieldOpts{
-			Label:       "Buscar",
+			Label:       "Search",
 			Value:       p.search.Value(),
-			Placeholder: "escribe para filtrar…",
+			Placeholder: "type to filter…",
 			Focused:     p.filtering,
 			Width:       inner,
 		}),
@@ -367,15 +367,15 @@ func (p *Bluetooth) View(t styles.Theme, width, height int) string {
 	return frame(t, width, height, p.title, rows...)
 }
 
-// scanStatus informa de la búsqueda en curso o de su resultado.
+// scanStatus reports the search in progress or its result.
 func (p *Bluetooth) scanStatus() string {
 	switch {
 	case p.scanning:
-		return " · buscando…"
+		return " · searching…"
 	case p.lastScan > 0:
-		return " · " + plural(p.lastScan, "nuevo", "nuevos")
+		return " · " + plural(p.lastScan, "new", "new")
 	case p.lastScan == 0:
-		return " · ninguno nuevo"
+		return " · none new"
 	default:
 		return ""
 	}
@@ -385,78 +385,78 @@ func deviceStatus(d bluetooth.Device) string {
 	switch d.State() {
 	case bluetooth.StateConnected:
 		if b := d.Battery(); b.Known() {
-			return "conectado · " + strconv.Itoa(b.Level()) + "%"
+			return "connected · " + strconv.Itoa(b.Level()) + "%"
 		}
-		return "conectado"
+		return "connected"
 	case bluetooth.StatePaired:
-		return "emparejado"
+		return "paired"
 	default:
-		return "no emparejado"
+		return "not paired"
 	}
 }
 
 var kindLabels = map[bluetooth.Kind]string{
-	bluetooth.KindHeadphones: "auriculares",
-	bluetooth.KindSpeaker:    "altavoz",
-	bluetooth.KindMouse:      "ratón",
-	bluetooth.KindKeyboard:   "teclado",
-	bluetooth.KindPhone:      "teléfono",
+	bluetooth.KindHeadphones: "headphones",
+	bluetooth.KindSpeaker:    "speaker",
+	bluetooth.KindMouse:      "mouse",
+	bluetooth.KindKeyboard:   "keyboard",
+	bluetooth.KindPhone:      "phone",
 }
 
-// kindLabel traduce el identificador del dominio a etiqueta de pantalla.
+// kindLabel turns the domain identifier into a screen label.
 func kindLabel(k bluetooth.Kind) string {
 	if label, ok := kindLabels[k]; ok {
 		return label
 	}
-	return "desconocido"
+	return "unknown"
 }
 
-// hint cambia según el estado del seleccionado: ofrecer "conectar" sobre un
-// dispositivo sin emparejar solo confunde.
+// hint changes with the selected device's state: offering "connect" on an
+// unpaired device only confuses.
 func (p *Bluetooth) hint(t styles.Theme) string {
 	switch {
 	case p.filtering:
 		return ui.Hints(t.Body.Hint,
-			ui.Key{Name: icons.Enter, Action: "aplicar"},
-			ui.Key{Name: icons.Escape, Action: "limpiar"},
+			ui.Key{Name: icons.Enter, Action: "apply"},
+			ui.Key{Name: icons.Escape, Action: "clear"},
 		)
 	case p.scanning:
-		return t.Body.Muted.Render("buscando dispositivos…")
+		return t.Body.Muted.Render("searching for devices…")
 	case !p.adapter.Enabled():
 		return ui.Hints(t.Body.Hint,
-			ui.Key{Name: "t", Action: "activar Bluetooth"},
-			ui.Key{Name: icons.UpDown, Action: "mover"},
-			ui.Key{Name: "r", Action: "renombrar"},
-			ui.Key{Name: "d", Action: "eliminar"},
+			ui.Key{Name: "t", Action: "turn on Bluetooth"},
+			ui.Key{Name: icons.UpDown, Action: "move"},
+			ui.Key{Name: "r", Action: "rename"},
+			ui.Key{Name: "d", Action: "remove"},
 		)
 	}
 
 	d, ok := p.selected()
 	if !ok {
 		return ui.Hints(t.Body.Hint,
-			ui.Key{Name: "s", Action: "buscar dispositivos"},
-			ui.Key{Name: "t", Action: "desactivar"},
+			ui.Key{Name: "s", Action: "search for devices"},
+			ui.Key{Name: "t", Action: "turn off"},
 		)
 	}
 
-	keys := []ui.Key{{Name: icons.UpDown, Action: "mover"}}
+	keys := []ui.Key{{Name: icons.UpDown, Action: "move"}}
 	switch d.State() {
 	case bluetooth.StateConnected:
 		keys = append(keys,
-			ui.Key{Name: icons.Enter, Action: "desconectar"},
-			ui.Key{Name: "u", Action: "olvidar"})
+			ui.Key{Name: icons.Enter, Action: "disconnect"},
+			ui.Key{Name: "u", Action: "forget"})
 	case bluetooth.StatePaired:
 		keys = append(keys,
-			ui.Key{Name: icons.Enter, Action: "conectar"},
-			ui.Key{Name: "u", Action: "olvidar"})
+			ui.Key{Name: icons.Enter, Action: "connect"},
+			ui.Key{Name: "u", Action: "forget"})
 	default:
-		keys = append(keys, ui.Key{Name: icons.Enter, Action: "emparejar"})
+		keys = append(keys, ui.Key{Name: icons.Enter, Action: "pair"})
 	}
 
 	return ui.Hints(t.Body.Hint, append(keys,
-		ui.Key{Name: "s", Action: "buscar"},
-		ui.Key{Name: "r", Action: "renombrar"},
-		ui.Key{Name: "d", Action: "eliminar"},
+		ui.Key{Name: "s", Action: "search"},
+		ui.Key{Name: "r", Action: "rename"},
+		ui.Key{Name: "d", Action: "remove"},
 	)...)
 }
 
@@ -468,18 +468,18 @@ func deviceCounter(items []bluetooth.Device) string {
 		}
 	}
 
-	return plural(len(items), "dispositivo", "dispositivos") + " · " +
-		plural(connected, "conectado", "conectados")
+	return plural(len(items), "device", "devices") + " · " +
+		plural(connected, "connected", "connected")
 }
 
-// deviceRows traduce el dominio al modelo de vista y deja que la sección lo
-// pinte. Es el único punto donde la pantalla decide qué se enseña de un
-// dispositivo.
+// deviceRows translates the domain to the view model and lets the section
+// render it. It is the only place where the screen decides what is shown of a
+// device.
 func (p *Bluetooth) deviceRows(t styles.Theme, width, height int) []string {
 	if len(p.items) == 0 {
-		msg := "No hay dispositivos conocidos."
+		msg := "No known devices."
 		if q := p.search.Trimmed(); q != "" {
-			msg = "Sin resultados para «" + q + "»."
+			msg = "No results for \"" + q + "\"."
 		}
 		return []string{t.List.Empty.Render(msg)}
 	}

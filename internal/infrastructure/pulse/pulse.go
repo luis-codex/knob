@@ -1,10 +1,10 @@
-// Package pulse implementa el puerto de audio contra el servidor de sonido,
-// invocando `pactl -f json`. Sirve tanto para PulseAudio como para PipeWire,
-// que expone el mismo protocolo.
+// Package pulse implements the audio port against the sound server by
+// invoking `pactl -f json`. It works for both PulseAudio and PipeWire, which
+// exposes the same protocol.
 //
-// Se usa la salida JSON y no la de texto: trae los booleanos ya tipados, los
-// nombres de los predeterminados directos y evita parsear a mano un formato
-// que cambia entre versiones.
+// The JSON output is used rather than the text one: it brings the booleans
+// already typed, the default names directly, and avoids hand-parsing a format
+// that changes between versions.
 package pulse
 
 import (
@@ -18,8 +18,8 @@ import (
 	"settings-cli/internal/domain/errs"
 )
 
-// binary es el ejecutable que se invoca. Variable para poder sustituirlo en
-// pruebas.
+// binary is the executable that gets invoked. A variable so it can be swapped
+// in tests.
 var binary = "pactl"
 
 func run(ctx context.Context, args ...string) ([]byte, error) {
@@ -28,12 +28,12 @@ func run(ctx context.Context, args ...string) ([]byte, error) {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		return nil, errs.Wrap(errs.KindConflict, "no se pudo hablar con el servidor de sonido", err)
+		return nil, errs.Wrap(errs.KindConflict, "could not talk to the sound server", err)
 	}
 	return out, nil
 }
 
-// kindOf traduce la dirección al vocabulario de pactl.
+// kindOf maps the direction to pactl's vocabulary.
 func kindOf(direction audio.Direction) string {
 	if direction == audio.Input {
 		return "source"
@@ -41,8 +41,8 @@ func kindOf(direction audio.Direction) string {
 	return "sink"
 }
 
-// jsonChannel es el volumen de un canal. Solo interesa el porcentaje: el valor
-// crudo y los decibelios son detalle del servidor.
+// jsonChannel is a channel's volume. Only the percentage matters: the raw
+// value and the decibels are a server detail.
 type jsonChannel struct {
 	ValuePercent string `json:"value_percent"`
 }
@@ -52,8 +52,8 @@ type jsonDevice struct {
 	Description string                 `json:"description"`
 	Mute        bool                   `json:"mute"`
 	Volume      map[string]jsonChannel `json:"volume"`
-	// MonitorSource, en una fuente, es la salida de la que es copia. Vacío
-	// significa que es una entrada real.
+	// MonitorSource, on a source, is the output it is a copy of. Empty means
+	// it is a real input.
 	MonitorSource string `json:"monitor_source"`
 }
 
@@ -62,7 +62,7 @@ type jsonInfo struct {
 	DefaultSource string `json:"default_source_name"`
 }
 
-// parsePercent lee "45%".
+// parsePercent reads "45%".
 func parsePercent(s string) (int, bool) {
 	digits, ok := strings.CutSuffix(strings.TrimSpace(s), "%")
 	if !ok {
@@ -76,12 +76,12 @@ func parsePercent(s string) (int, bool) {
 	return value, true
 }
 
-// volumeOf resume el volumen por canales en un solo nivel.
+// volumeOf sums up the per-channel volume into a single level.
 //
-// Se toma el máximo y no "el primero": el JSON los trae en un mapa, y el
-// recorrido de un mapa en Go es aleatorio, así que quedarse con uno
-// cualquiera daría un nivel distinto en cada lectura de un dispositivo
-// desbalanceado. El máximo es además lo que enseñan los mezcladores.
+// It takes the maximum rather than "the first": the JSON brings them in a map,
+// and Go's map iteration is random, so keeping any one of them would give a
+// different level on each read of an unbalanced device. The maximum is also
+// what mixers show.
 func volumeOf(channels map[string]jsonChannel) (audio.Volume, bool) {
 	level, found := 0, false
 
@@ -101,11 +101,11 @@ func volumeOf(channels map[string]jsonChannel) (audio.Volume, bool) {
 	return audio.ClampVolume(level), true
 }
 
-// toDevice traduce un dispositivo de pactl al dominio. Devuelve false si el
-// bloque no describe un dispositivo utilizable.
+// toDevice translates a pactl device to the domain. It returns false if the
+// block does not describe a usable device.
 func toDevice(d jsonDevice, direction audio.Direction, defaultName string) (audio.Device, bool) {
-	// Los monitores son la copia de una salida, no una entrada real: sacarlos
-	// aquí evita que un micrófono inexistente aparezca en la lista.
+	// Monitors are the copy of an output, not a real input: dropping them here
+	// keeps a nonexistent microphone out of the list.
 	if direction == audio.Input && d.MonitorSource != "" {
 		return audio.Device{}, false
 	}
@@ -135,7 +135,7 @@ func toDevice(d jsonDevice, direction audio.Direction, defaultName string) (audi
 func decodeDevices(raw []byte) ([]jsonDevice, error) {
 	var devices []jsonDevice
 	if err := json.Unmarshal(raw, &devices); err != nil {
-		return nil, errs.Wrap(errs.KindConflict, "respuesta ilegible del servidor de sonido", err)
+		return nil, errs.Wrap(errs.KindConflict, "unreadable response from the sound server", err)
 	}
 	return devices, nil
 }

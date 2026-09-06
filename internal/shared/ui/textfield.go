@@ -6,19 +6,19 @@ import (
 	"settings-cli/internal/shared/styles"
 )
 
-// TextFieldOpts configura un campo de texto. El buffer y el foco los
-// mantiene quien lo dibuja.
+// TextFieldOpts configures a text field. The buffer and focus are kept by
+// whoever draws it.
 type TextFieldOpts struct {
 	Label       string
 	Value       string
 	Placeholder string
 	Focused     bool
-	// Width es el ancho total del campo, etiqueta incluida.
+	// Width is the field's total width, label included.
 	Width int
 }
 
-// TextField renderiza una entrada de una línea. El cursor solo aparece con
-// foco, para distinguirla de un campo inactivo con texto.
+// TextField renders a single-line input. The cursor only appears when focused,
+// to tell it apart from an inactive field with text.
 func TextField(t styles.Theme, opts TextFieldOpts) string {
 	label := ""
 	if opts.Label != "" {
@@ -35,25 +35,26 @@ func TextField(t styles.Theme, opts TextFieldOpts) string {
 		style = t.Input.Focused
 	}
 
-	// El cursor ocupa una celda, así que el texto se corta a box-1.
+	// The cursor takes one cell, so the text is clipped to box-1.
 	text, cursor := opts.Value, ""
 	if opts.Focused {
 		cursor = t.Input.Cursor.Render(" ")
 	}
 	textWidth := box - ansi.StringWidth(ansi.Strip(cursor))
 
-	// También con foco: un campo vacío sin pista no dice qué se espera.
+	// Also when focused: an empty field with no hint does not say what is
+	// expected.
 	if text == "" && opts.Placeholder != "" {
 		return label + style.Width(box).Render(
 			cursor+t.Input.Placeholder.Render(fitLeft(t, opts.Placeholder, textWidth)),
 		)
 	}
 
-	// Si no cabe se muestra la cola, donde está escribiendo el usuario.
+	// If it does not fit, the tail is shown, where the user is typing.
 	return label + style.Width(box).Render(tail(text, textWidth)+cursor)
 }
 
-// tail devuelve las últimas width columnas de s.
+// tail returns the last width columns of s.
 func tail(s string, width int) string {
 	if width <= 0 {
 		return ""

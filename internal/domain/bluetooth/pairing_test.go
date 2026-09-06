@@ -14,12 +14,12 @@ func TestPasskey(t *testing.T) {
 		want string
 		err  error
 	}{
-		{name: "seis dígitos", code: 123456, want: "123456"},
-		{name: "rellena con ceros", code: 42, want: "000042"},
-		{name: "cero", code: 0, want: "000000"},
-		{name: "máximo", code: 999999, want: "999999"},
-		{name: "negativo", code: -1, err: bluetooth.ErrInvalidPasskey},
-		{name: "demasiado grande", code: 1000000, err: bluetooth.ErrInvalidPasskey},
+		{name: "six digits", code: 123456, want: "123456"},
+		{name: "left-pads with zeros", code: 42, want: "000042"},
+		{name: "zero", code: 0, want: "000000"},
+		{name: "max", code: 999999, want: "999999"},
+		{name: "negative", code: -1, err: bluetooth.ErrInvalidPasskey},
+		{name: "too large", code: 1000000, err: bluetooth.ErrInvalidPasskey},
 	}
 
 	for _, tc := range tests {
@@ -28,15 +28,15 @@ func TestPasskey(t *testing.T) {
 
 			if tc.err != nil {
 				if !errors.Is(err, tc.err) {
-					t.Fatalf("error = %v, se esperaba %v", err, tc.err)
+					t.Fatalf("error = %v, want %v", err, tc.err)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("error inesperado: %v", err)
+				t.Fatalf("unexpected error: %v", err)
 			}
 			if !got.Present() || got.String() != tc.want {
-				t.Errorf("String() = %q, se esperaba %q", got, tc.want)
+				t.Errorf("String() = %q, want %q", got, tc.want)
 			}
 		})
 	}
@@ -48,10 +48,10 @@ func TestNoPasskey(t *testing.T) {
 		t.Errorf("NoPasskey = %q/%v", p, p.Present())
 	}
 
-	// El valor cero debe comportarse igual: sin código, no "000000".
+	// The zero value must behave the same: no code, not "000000".
 	var zero bluetooth.Passkey
 	if zero.Present() {
-		t.Error("el valor cero de Passkey debe ser 'sin código'")
+		t.Error("the zero value of Passkey must be 'no code'")
 	}
 }
 
@@ -60,7 +60,7 @@ func TestNewPairingRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewAddress: %v", err)
 	}
-	name, err := bluetooth.NewName("iPhone de Ana")
+	name, err := bluetooth.NewName("Ana's iPhone")
 	if err != nil {
 		t.Fatalf("NewName: %v", err)
 	}
@@ -69,39 +69,39 @@ func TestNewPairingRequest(t *testing.T) {
 		t.Fatalf("NewPasskey: %v", err)
 	}
 
-	t.Run("válida", func(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
 		got, err := bluetooth.NewPairingRequest(address, name, passkey)
 		if err != nil {
 			t.Fatalf("NewPairingRequest: %v", err)
 		}
 		if got.Address().String() != "AA:BB:CC:DD:EE:FF" || got.Passkey().String() != "482913" {
-			t.Errorf("solicitud = %s / %s", got.Address(), got.Passkey())
+			t.Errorf("request = %s / %s", got.Address(), got.Passkey())
 		}
 	})
 
-	t.Run("sin dirección", func(t *testing.T) {
+	t.Run("no address", func(t *testing.T) {
 		if _, err := bluetooth.NewPairingRequest(bluetooth.Address{}, name, passkey); !errors.Is(err, bluetooth.ErrInvalidAddress) {
 			t.Fatalf("error = %v", err)
 		}
 	})
 
-	t.Run("sin nombre", func(t *testing.T) {
+	t.Run("no name", func(t *testing.T) {
 		if _, err := bluetooth.NewPairingRequest(address, bluetooth.Name{}, passkey); !errors.Is(err, bluetooth.ErrEmptyName) {
 			t.Fatalf("error = %v", err)
 		}
 	})
 }
 
-func TestAdapterVisibilidad(t *testing.T) {
-	t.Run("apagado no puede ser visible", func(t *testing.T) {
+func TestAdapterVisibility(t *testing.T) {
+	t.Run("off cannot be visible", func(t *testing.T) {
 		off := bluetooth.NewAdapter(false).SetVisible(true)
 
 		if off.Discoverable() || off.Pairable() || off.Visible() {
-			t.Error("una radio apagada no puede anunciarse ni aceptar solicitudes")
+			t.Error("a radio that is off cannot advertise itself or accept requests")
 		}
 	})
 
-	t.Run("encendido sí", func(t *testing.T) {
+	t.Run("on can", func(t *testing.T) {
 		on := bluetooth.NewAdapter(true).SetVisible(true)
 
 		if !on.Discoverable() || !on.Pairable() || !on.Visible() {
@@ -109,24 +109,25 @@ func TestAdapterVisibilidad(t *testing.T) {
 		}
 	})
 
-	t.Run("apagar quita la visibilidad", func(t *testing.T) {
+	t.Run("turning off removes visibility", func(t *testing.T) {
 		off := bluetooth.NewAdapter(true).SetVisible(true).Disable()
 
 		if off.Discoverable() || off.Pairable() {
-			t.Error("apagar debe dejar el equipo invisible")
+			t.Error("turning off must leave the machine invisible")
 		}
 
-		// Volver a encender no la recupera sola: es una decisión aparte.
+		// Turning it back on does not restore it by itself: that is a
+		// separate decision.
 		if on := off.Enable(); on.Visible() {
-			t.Error("encender no debe restaurar la visibilidad")
+			t.Error("turning on must not restore visibility")
 		}
 	})
 
-	t.Run("Visible exige ambas", func(t *testing.T) {
+	t.Run("Visible requires both", func(t *testing.T) {
 		half := bluetooth.NewAdapter(true).SetDiscoverable(true)
 
 		if half.Visible() {
-			t.Error("anunciarse sin aceptar emparejamientos no es ser visible")
+			t.Error("advertising without accepting pairings is not being visible")
 		}
 	})
 }

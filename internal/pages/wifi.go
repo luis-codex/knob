@@ -4,12 +4,12 @@ import (
 	"settings-cli/internal/shared/styles"
 )
 
-// wifiNote avisa de que la pantalla aún no gestiona nada. Se quita cuando
-// exista el adaptador contra el gestor de red.
-const wifiNote = "En desarrollo · aún no gestiona redes"
+// wifiNote warns that the screen does not manage anything yet. It goes away
+// when the adapter against the network manager exists.
+const wifiNote = "In development · does not manage networks yet"
 
-// WiFi es la pantalla de redes. De momento solo informa: falta el puerto
-// contra el gestor de red del sistema.
+// WiFi is the network screen. For now it only informs: the port against the
+// system's network manager is missing.
 type WiFi struct {
 	title string
 }
@@ -22,7 +22,7 @@ func (p WiFi) View(t styles.Theme, width, height int) string {
 	return frame(t, width, height, p.title,
 		t.Body.Note.Render(wifiNote),
 		"",
-		t.Body.Muted.Render("Hará falta un adaptador contra NetworkManager o iwd,"),
-		t.Body.Muted.Render("igual que bluez lo es para Bluetooth."),
+		t.Body.Muted.Render("It will need an adapter against NetworkManager or iwd,"),
+		t.Body.Muted.Render("just as bluez is the one for Bluetooth."),
 	)
 }

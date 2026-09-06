@@ -16,23 +16,13 @@ import (
 )
 
 const (
-	// volumeStep es cuánto mueve una pulsación de ←/→.
+	// volumeStep is how much a left/right press moves.
 	volumeStep = 5
-	// La fila es una rejilla de columnas fijas. Si alguna dependiera del
-	// contenido —el nivel ocupa 3 o 4 caracteres—, la barra bailaría de una
-	// fila a otra y nada quedaría alineado.
-	markerColumn = 2 // marcador de predeterminado
-	gapColumn    = 2 // separación entre columnas
-	levelColumn  = 5 // "100%", "45%" o "mudo", alineados a la derecha
-	maxAudioName = 38
-	minAudioName = 12
-
-	// blinkInterval es cada cuánto se enciende y se apaga el punto de los
-	// flujos que suenan.
+	// blinkInterval is how often the dot of audible streams turns on and off.
 	blinkInterval = 600 * time.Millisecond
 )
 
-// section distingue las dos listas de la página. El foco está siempre en una.
+// section tells the page's two lists apart. Focus is always on one of them.
 type section int
 
 const (
@@ -41,13 +31,13 @@ const (
 	sectionStreams
 )
 
-// sections es el orden de pantalla; tab avanza por él.
+// sections is the on-screen order; tab moves through it.
 var sections = []section{sectionOutputs, sectionInputs, sectionStreams}
 
 var sectionLabels = map[section]string{
-	sectionOutputs: "Salidas",
-	sectionInputs:  "Micrófonos",
-	sectionStreams: "Mezclador",
+	sectionOutputs: "Outputs",
+	sectionInputs:  "Microphones",
+	sectionStreams: "Mixer",
 }
 
 type (
@@ -59,43 +49,43 @@ type (
 	audioChangedMsg struct{}
 	audioFailedMsg  struct{ err error }
 
-	// audioBlinkMsg alterna el punto de los flujos que suenan. Se rearma solo
-	// mientras haya algo sonando.
+	// audioBlinkMsg toggles the dot of audible streams. It re-arms itself only
+	// while something is playing.
 	audioBlinkMsg struct{}
 
-	// audioWatchingMsg entrega el canal de avisos. Suscribirse es E/S, así
-	// que se hace en un comando y el canal se guarda al recibirlo: el estado
-	// solo cambia en HandleMsg.
+	// audioWatchingMsg delivers the notification channel. Subscribing is I/O,
+	// so it happens in a command and the channel is stored on receipt: state
+	// only changes in HandleMsg.
 	audioWatchingMsg struct{ changes <-chan struct{} }
-	// audioExternalMsg es un cambio hecho fuera de la aplicación.
+	// audioExternalMsg is a change made outside the application.
 	audioExternalMsg struct{}
 )
 
-// Audio administra salidas y micrófonos en una sola pantalla, con una lista
-// por sección y el foco en una de ellas.
+// Audio manages outputs and microphones on a single screen, with one list per
+// section and focus on one of them.
 type Audio struct {
 	title string
 	svc   *sound.Service
-	// ctx acota la suscripción a la vida de la aplicación. Sin él el proceso
-	// que escucha al servidor de sonido queda huérfano al salir.
+	// ctx bounds the subscription to the application's lifetime. Without it
+	// the process listening to the sound server is orphaned on exit.
 	ctx context.Context
 
 	outputs []audio.Device
 	inputs  []audio.Device
 	streams []audio.Stream
 
-	// Una lista por sección: cada una guarda su propio cursor, de modo que
-	// cambiar de sección no pierde dónde estabas.
+	// One list per section: each keeps its own cursor, so switching sections
+	// does not lose where you were.
 	lists   map[section]*components.List
 	focused section
 
-	// changes avisa de cambios externos: teclas de volumen, un mezclador
-	// gráfico, enchufar auriculares.
+	// changes reports external changes: volume keys, a graphical mixer,
+	// plugging in headphones.
 	changes <-chan struct{}
 	failure string
 
-	// blinkOn enciende el punto de los flujos que suenan; blinking evita
-	// armar dos temporizadores a la vez.
+	// blinkOn turns on the dot of audible streams; blinking prevents arming
+	// two timers at once.
 	blinkOn  bool
 	blinking bool
 }
@@ -113,12 +103,12 @@ func NewAudio(ctx context.Context, title string, svc *sound.Service) *Audio {
 	}
 }
 
-// Init carga el estado y se suscribe a los cambios externos.
+// Init loads the state and subscribes to external changes.
 func (p *Audio) Init() tea.Cmd {
 	return tea.Batch(p.reload(), p.subscribe())
 }
 
-// subscribe abre la escucha, acotada al contexto de la aplicación.
+// subscribe opens the listener, bounded to the application's context.
 func (p *Audio) subscribe() tea.Cmd {
 	svc, ctx := p.svc, p.ctx
 
@@ -131,8 +121,8 @@ func (p *Audio) subscribe() tea.Cmd {
 	}
 }
 
-// waitForChange se bloquea hasta el siguiente aviso. Hay que rearmarlo tras
-// cada uno: un comando de Bubble Tea se ejecuta una sola vez.
+// waitForChange blocks until the next notification. It must be re-armed after
+// each one: a Bubble Tea command runs exactly once.
 func waitForChange(changes <-chan struct{}) tea.Cmd {
 	if changes == nil {
 		return nil
@@ -140,19 +130,19 @@ func waitForChange(changes <-chan struct{}) tea.Cmd {
 
 	return func() tea.Msg {
 		if _, ok := <-changes; !ok {
-			return nil // el canal se cerró: se deja de escuchar
+			return nil // the channel closed: stop listening
 		}
 		return audioExternalMsg{}
 	}
 }
 
-// blinkTick programa el siguiente cambio del punto de reproducción.
+// blinkTick schedules the next change of the playback dot.
 func blinkTick() tea.Cmd {
 	return tea.Tick(blinkInterval, func(time.Time) tea.Msg { return audioBlinkMsg{} })
 }
 
-// ensureBlink arranca el parpadeo si hay algún flujo sonando y no está ya en
-// marcha. Sin la guarda, cada recarga encadenaría un temporizador más.
+// ensureBlink starts the blink if some stream is playing and it is not already
+// running. Without the guard, each reload would chain one more timer.
 func (p *Audio) ensureBlink() tea.Cmd {
 	if p.blinking || !p.anyStreamAudible() {
 		return nil
@@ -161,8 +151,8 @@ func (p *Audio) ensureBlink() tea.Cmd {
 	return blinkTick()
 }
 
-// anyStreamAudible indica si algún flujo suena de verdad: ni en pausa ni
-// silenciado.
+// anyStreamAudible reports whether some stream is actually audible: neither
+// paused nor muted.
 func (p *Audio) anyStreamAudible() bool {
 	for _, s := range p.streams {
 		if !s.Paused() && !s.Muted() {
@@ -172,7 +162,7 @@ func (p *Audio) anyStreamAudible() bool {
 	return false
 }
 
-// --- comandos ---------------------------------------------------------------
+// --- commands -------------------------------------------------------------
 
 func (p *Audio) reload() tea.Cmd {
 	svc := p.svc
@@ -198,9 +188,9 @@ func (p *Audio) reload() tea.Cmd {
 	}
 }
 
-// audioMutate envuelve una operación de escritura: si va bien devuelve
-// audioChangedMsg para que la página se relea, y si falla, audioFailedMsg.
-// Cada página tiene la suya porque el mensaje de éxito es distinto.
+// audioMutate wraps a write operation: on success it returns audioChangedMsg
+// so the page re-reads itself, and on failure, audioFailedMsg. Each page has
+// its own because the success message differs.
 func audioMutate(op func(context.Context) error) tea.Cmd {
 	return func() tea.Msg {
 		if err := op(context.Background()); err != nil {
@@ -210,7 +200,7 @@ func audioMutate(op func(context.Context) error) tea.Cmd {
 	}
 }
 
-// --- estado -----------------------------------------------------------------
+// --- state --------------------------------------------------------------
 
 func (p *Audio) devices(s section) []audio.Device {
 	if s == sectionInputs {
@@ -236,7 +226,7 @@ func (p *Audio) selectedStream() (audio.Stream, bool) {
 	return audio.Stream{}, false
 }
 
-// --- mensajes ---------------------------------------------------------------
+// --- messages -----------------------------------------------------------
 
 func (p *Audio) HandleMsg(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
@@ -249,8 +239,7 @@ func (p *Audio) HandleMsg(msg tea.Msg) tea.Cmd {
 
 	case audioBlinkMsg:
 		p.blinkOn = !p.blinkOn
-		// Se para al quedarse sin nada que suene; lo rearma la siguiente
-		// recarga.
+		// It stops once nothing is audible; the next reload re-arms it.
 		if !p.anyStreamAudible() {
 			p.blinking = false
 			return nil
@@ -265,8 +254,8 @@ func (p *Audio) HandleMsg(msg tea.Msg) tea.Cmd {
 		return waitForChange(p.changes)
 
 	case audioExternalMsg:
-		// Releer y volver a escuchar. El aviso no dice qué cambió, así que
-		// se relee entero en vez de deducirlo.
+		// Re-read and listen again. The notification does not say what
+		// changed, so it is re-read whole rather than inferred.
 		return tea.Batch(p.reload(), waitForChange(p.changes))
 
 	case audioFailedMsg:
@@ -275,7 +264,7 @@ func (p *Audio) HandleMsg(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-// --- teclado ----------------------------------------------------------------
+// --- keyboard ---------------------------------------------------------------
 
 func (p *Audio) HandleKey(msg tea.KeyPressMsg) (bool, tea.Cmd) {
 	switch msg.String() {
@@ -351,7 +340,7 @@ func (p *Audio) toggleMute() tea.Cmd {
 	})
 }
 
-// makeDefault no aplica a los flujos: nadie elige "el flujo por defecto".
+// makeDefault does not apply to streams: nobody picks "the default stream".
 func (p *Audio) makeDefault() tea.Cmd {
 	if p.focused == sectionStreams {
 		return nil
@@ -369,7 +358,7 @@ func (p *Audio) makeDefault() tea.Cmd {
 	})
 }
 
-// --- render -----------------------------------------------------------------
+// --- render -------------------------------------------------------------
 
 func (p *Audio) View(t styles.Theme, width, height int) string {
 	inner := width - t.Body.Base.GetHorizontalFrameSize()
@@ -383,8 +372,8 @@ func (p *Audio) View(t styles.Theme, width, height int) string {
 	}
 	tail = append(tail, "", fit(p.hint(t), inner))
 
-	// Las secciones reparten el alto restante. Los divisores van entre ellas,
-	// así que son una fila menos que secciones, más su línea en blanco.
+	// The sections split the remaining height. The dividers go between them,
+	// so they are one row fewer than sections, plus their blank line.
 	dividers := (len(sections) - 1) * 2
 	available := height - frameChrome - len(tail) - len(sections)*audioui.Chrome - dividers
 	listHeight := max(1, available/len(sections))
@@ -392,7 +381,8 @@ func (p *Audio) View(t styles.Theme, width, height int) string {
 	rows := make([]string, 0, height)
 	for i, s := range sections {
 		if i > 0 {
-			// Nunca tras la última: ahí ya separa el blanco que precede al pie.
+			// Never after the last one: there the blank before the footer
+			// already separates it.
 			rows = append(rows, ui.HDivider(t, inner), "")
 		}
 		rows = append(rows, p.section(t, s).Render(t, inner, listHeight)...)
@@ -402,7 +392,7 @@ func (p *Audio) View(t styles.Theme, width, height int) string {
 	return frame(t, width, height, p.title, rows...)
 }
 
-// section arma la sección que toca con su modelo de vista.
+// section builds the relevant section with its view model.
 func (p *Audio) section(t styles.Theme, s section) audioui.Section {
 	out := audioui.Section{
 		Label:   sectionLabels[s],
@@ -411,7 +401,7 @@ func (p *Audio) section(t styles.Theme, s section) audioui.Section {
 	}
 
 	if s == sectionStreams {
-		out.Empty = "Nada reproduciéndose."
+		out.Empty = "Nothing playing."
 		out.Meters = make([]audioui.Meter, len(p.streams))
 		for i, stream := range p.streams {
 			out.Meters[i] = streamMeter(t, stream, p.blinkOn)
@@ -420,7 +410,7 @@ func (p *Audio) section(t styles.Theme, s section) audioui.Section {
 	}
 
 	items := p.devices(s)
-	out.Empty = "Sin dispositivos."
+	out.Empty = "No devices."
 	out.Meters = make([]audioui.Meter, len(items))
 	for i, d := range items {
 		out.Meters[i] = deviceMeter(t, d)
@@ -428,8 +418,8 @@ func (p *Audio) section(t styles.Theme, s section) audioui.Section {
 	return out
 }
 
-// deviceMeter y streamMeter traducen el dominio al modelo de vista. Es el
-// único punto donde la pantalla decide qué se enseña de cada cosa.
+// deviceMeter and streamMeter translate the domain to the view model. It is
+// the only place where the screen decides what is shown of each thing.
 func deviceMeter(t styles.Theme, d audio.Device) audioui.Meter {
 	m := audioui.Meter{
 		Name:  d.Name().String(),
@@ -454,9 +444,9 @@ func streamMeter(t styles.Theme, s audio.Stream, blinkOn bool) audioui.Meter {
 		Muted: s.Muted(),
 	}
 
-	// El hueco del indicador cuenta lo que se oye: la pausa lo ocupa fija y
-	// sin acento porque avisa, no destaca; un flujo que suena lo hace
-	// parpadear. Silenciado no enseña nada: no sale sonido.
+	// The indicator slot reflects what is heard: a pause holds it fixed and
+	// without accent because it warns rather than stands out; a playing stream
+	// makes it blink. Muted shows nothing: no sound comes out.
 	switch {
 	case s.Paused():
 		m.Marker = t.Icon.Paused
@@ -468,15 +458,15 @@ func streamMeter(t styles.Theme, s audio.Stream, blinkOn bool) audioui.Meter {
 
 func (p *Audio) hint(t styles.Theme) string {
 	keys := []ui.Key{
-		{Name: icons.UpDown, Action: "mover"},
-		{Name: icons.Tab, Action: "sección"},
-		{Name: icons.LeftRight, Action: "volumen"},
-		{Name: "m", Action: "silenciar"},
+		{Name: icons.UpDown, Action: "move"},
+		{Name: icons.Tab, Action: "section"},
+		{Name: icons.LeftRight, Action: "volume"},
+		{Name: "m", Action: "mute"},
 	}
 
-	// En el mezclador no hay predeterminado que elegir.
+	// In the mixer there is no default to pick.
 	if p.focused != sectionStreams {
-		keys = append(keys, ui.Key{Name: icons.Enter, Action: "predeterminado"})
+		keys = append(keys, ui.Key{Name: icons.Enter, Action: "default"})
 	}
 	return ui.Hints(t.Body.Hint, keys...)
 }

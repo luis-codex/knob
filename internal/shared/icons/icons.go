@@ -1,26 +1,27 @@
-// Package icons reúne los símbolos de la interfaz en un solo sitio.
+// Package icons gathers the interface's symbols in one place.
 //
-// Son el juego por defecto: el tema los recoge en styles.Icons, así que
-// cambiarlos para un terminal concreto no obliga a tocar este paquete.
+// They are the default set: the theme picks them up in styles.Icons, so
+// changing them for a specific terminal does not require touching this
+// package.
 //
-// Todos deben ocupar una celda salvo los que se documenten como dobles: la
-// rejilla de las filas cuenta con ello.
+// They must all take one cell except the ones documented as double: the row
+// grid counts on it.
 package icons
 
-// Marcadores de estado en una lista.
+// Status markers in a list.
 const (
-	// Cursor señala la fila bajo el cursor.
+	// Cursor points at the row under the cursor.
 	Cursor = "›"
-	// Active señala el elemento en uso: el dispositivo predeterminado.
+	// Active points at the element in use: the default device.
 	Active = "●"
-	// Paused señala un flujo de audio detenido.
+	// Paused points at a stopped audio stream.
 	Paused = "⏸"
-	// Playing señala un flujo que suena. Parpadea, así que la pantalla lo
-	// enciende y lo apaga.
+	// Playing points at a playing stream. It blinks, so the screen turns it on
+	// and off.
 	Playing = "●"
 )
 
-// Trazos del layout y de las barras.
+// Layout and bar strokes.
 const (
 	BarOn       = "▰"
 	BarOff      = "·"
@@ -31,19 +32,19 @@ const (
 	Ellipsis    = "…"
 )
 
-// Teclas. Se escriben con el símbolo cuando existe y con su nombre cuando no:
-// "esc" se reconoce mejor que cualquier glifo.
+// Keys. Written with the symbol when one exists and with the name when not:
+// "esc" is easier to recognize than any glyph.
 const (
-	// Enter ocupa una celda.
+	// Enter takes one cell.
 	Enter = "↵"
-	// UpDown y LeftRight ocupan dos.
+	// UpDown and LeftRight take two.
 	UpDown    = "↑↓"
 	LeftRight = "←→"
 	Tab       = "⇥"
 	Escape    = "esc"
-	Space     = "espacio"
-	Delete    = "supr"
+	Space     = "space"
+	Delete    = "del"
 )
 
-// Separator va entre una pista de teclado y la siguiente.
+// Separator goes between one keyboard hint and the next.
 const Separator = "·"

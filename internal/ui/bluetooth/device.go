@@ -1,7 +1,7 @@
-// Package bluetooth pinta las secciones de la pantalla de Bluetooth.
+// Package bluetooth renders the Bluetooth screen's sections.
 //
-// No conoce el dominio: recibe modelos de vista que arma la página, así que
-// el render no depende de cómo esté modelado un dispositivo.
+// It does not know the domain: it receives view models built by the page, so
+// the render does not depend on how a device is modeled.
 package bluetooth
 
 import (
@@ -12,20 +12,20 @@ import (
 	"settings-cli/internal/shared/styles"
 )
 
-// nameColumn es el ancho reservado al nombre; el resto queda para tipo y
-// estado.
+// nameColumn is the width reserved for the name; the rest is left for kind and
+// status.
 const nameColumn = 22
 
-// Device es una fila de la lista: lo que se enseña de un dispositivo.
+// Device is one row of the list: what is shown of a device.
 type Device struct {
 	Name   string
 	Kind   string
 	Status string
 }
 
-// Row compone nombre, tipo y estado en una línea. Va sin estilos propios:
-// components.List tiñe la fila entera y un color interno rompería el fondo de
-// la seleccionada.
+// Row composes name, kind and status on one line. It carries no styles of its
+// own: components.List tints the whole row and an inner color would break the
+// selected row's background.
 func Row(t styles.Theme, d Device, width int) string {
 	name := pad(truncate(t, d.Name, nameColumn), nameColumn)
 
@@ -33,21 +33,21 @@ func Row(t styles.Theme, d Device, width int) string {
 	return name + d.Kind + spaces(max(gap, 1)) + d.Status
 }
 
-// Adapter es el interruptor de la radio, alineado a los extremos.
+// Adapter is the radio's switch, aligned to the edges.
 func Adapter(t styles.Theme, enabled bool, width int) string {
 	const label = "Bluetooth"
 
-	state, style := "desactivado", t.Body.Muted
+	state, style := "off", t.Body.Muted
 	if enabled {
-		state, style = "activado", t.Body.Badge
+		state, style = "on", t.Body.Badge
 	}
 
 	gap := width - ansi.StringWidth(label) - ansi.StringWidth(state)
 	return t.Body.Label.Render(label) + spaces(max(gap, 1)) + style.Render(state)
 }
 
-// Rows dibuja la lista con el cursor que le presta la página: la sección
-// pinta, pero el cursor no es suyo.
+// Rows draws the list with the cursor the page lends it: the section renders,
+// but the cursor is not its own.
 func Rows(t styles.Theme, devices []Device, list *components.List, width, height int, focused bool) []string {
 	return list.Render(t, len(devices), width, height, focused,
 		func(i int, base lipgloss.Style, w int) string {

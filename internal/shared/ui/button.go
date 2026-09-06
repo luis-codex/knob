@@ -6,20 +6,20 @@ import (
 	"settings-cli/internal/shared/styles"
 )
 
-// ButtonOpts configura un botón. El foco lo mantiene quien lo dibuja.
+// ButtonOpts configures a button. Focus is kept by whoever draws it.
 type ButtonOpts struct {
 	Text string
-	// Focused marca el botón activo dentro de su grupo.
+	// Focused marks the active button within its group.
 	Focused bool
-	// Danger tiñe el botón como destructivo. Solo se aplica con foco.
+	// Danger tints the button as destructive. Applied only when focused.
 	Danger bool
-	// Padding horizontal interno. 0 usa el valor por defecto (2).
+	// Inner horizontal padding. 0 uses the default (2).
 	Padding int
 }
 
 const defaultButtonPadding = 2
 
-// Button renderiza un botón.
+// Button renders a button.
 func Button(t styles.Theme, opts ButtonOpts) string {
 	style := t.Button.Blurred
 	switch {
@@ -36,8 +36,8 @@ func Button(t styles.Theme, opts ButtonOpts) string {
 	return style.Padding(0, opts.Padding).Render(opts.Text)
 }
 
-// ButtonGroup renderiza una fila de botones. spacing vacío usa dos espacios;
-// "\n" los apila en vertical.
+// ButtonGroup renders a row of buttons. An empty spacing uses two spaces; "\n"
+// stacks them vertically.
 func ButtonGroup(t styles.Theme, buttons []ButtonOpts, spacing string) string {
 	if len(buttons) == 0 {
 		return ""

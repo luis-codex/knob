@@ -7,11 +7,11 @@ import (
 	"settings-cli/internal/shared/ui"
 )
 
-// List es una lista navegable con scroll. Guarda cursor y desplazamiento; el
-// texto de las filas lo formatea quien la usa.
+// List is a navigable, scrolling list. It keeps the cursor and offset; the row
+// text is formatted by whoever uses it.
 //
-// Es un puntero y no un valor: Render ajusta el desplazamiento, y es el único
-// punto que conoce la altura disponible.
+// It is a pointer and not a value: Render adjusts the offset, and it is the
+// only place that knows the available height.
 type List struct {
 	cursor int
 	offset int
@@ -32,8 +32,9 @@ func (l *List) Prev() {
 	l.clampCursor()
 }
 
-// SetCount reajusta el cursor tras cambiar los datos. Obligatorio al filtrar
-// o borrar, o el cursor apunta a un índice que ya no existe.
+// SetCount re-adjusts the cursor after the data changes. Mandatory when
+// filtering or deleting, or the cursor points to an index that no longer
+// exists.
 func (l *List) SetCount(n int) {
 	l.count = n
 	l.clampCursor()
@@ -47,22 +48,22 @@ func (l *List) clampCursor() {
 	l.cursor = clamp(l.cursor, 0, l.count-1)
 }
 
-// RowFunc formatea el contenido de una fila.
+// RowFunc formats a row's content.
 //
-// Recibe el estilo ya resuelto (normal o seleccionada) y el ancho exacto que
-// debe ocupar. Quien coloree tramos por su cuenta tiene que aplicar base a
-// todos: un reset ANSI intermedio se lleva por delante el fondo del resto.
+// It receives the style already resolved (normal or selected) and the exact
+// width it must occupy. Whoever colors spans on their own must apply base to
+// all of them: a mid-string ANSI reset takes the rest's background with it.
 type RowFunc func(index int, base lipgloss.Style, width int) string
 
-// PlainRows adapta filas de texto sin color, que es el caso habitual.
+// PlainRows adapts plain, uncolored text rows, which is the common case.
 func PlainRows(t styles.Theme, rows []string) RowFunc {
 	return func(i int, base lipgloss.Style, width int) string {
 		return base.Width(width).Render(fit(t, rows[i], width))
 	}
 }
 
-// Render devuelve las filas visibles con su barra de scroll. showCursor apaga
-// el resaltado cuando el foco está en otro sitio.
+// Render returns the visible rows with their scrollbar. showCursor turns off
+// the highlight when focus is elsewhere.
 func (l *List) Render(t styles.Theme, count, width, height int, showCursor bool, row RowFunc) []string {
 	l.SetCount(count)
 	if count == 0 || height <= 0 || width <= 0 {
@@ -72,9 +73,9 @@ func (l *List) Render(t styles.Theme, count, width, height int, showCursor bool,
 	l.offset = ui.ScrollOffset(l.offset, l.cursor, count, height)
 	bar := ui.Scrollbar(t, count, l.offset, height)
 
-	// El hueco de la barra se reserva siempre, haya barra o no: si dependiera
-	// de que la lista desborde, las filas cambiarían de ancho al crecer y dos
-	// listas contiguas no quedarían alineadas.
+	// The scrollbar slot is always reserved, bar or no bar: if it depended on
+	// the list overflowing, the rows would change width as it grows and two
+	// adjacent lists would not line up.
 	const scrollbarColumns = 2
 	itemWidth := width - scrollbarColumns
 

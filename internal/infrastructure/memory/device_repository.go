@@ -7,9 +7,10 @@ import (
 	"settings-cli/internal/domain/bluetooth"
 )
 
-// DeviceRepository implementa bluetooth.Repository.
+// DeviceRepository implements bluetooth.Repository.
 //
-// Guarda en slice y no en mapa porque el puerto exige orden de descubrimiento.
+// It stores a slice rather than a map because the port requires discovery
+// order.
 type DeviceRepository struct {
 	mu      sync.RWMutex
 	devices []bluetooth.Device
@@ -21,7 +22,7 @@ func NewDeviceRepository() *DeviceRepository {
 	return &DeviceRepository{}
 }
 
-// Save inserta o actualiza según exista ya la dirección.
+// Save inserts or updates depending on whether the address already exists.
 func (r *DeviceRepository) Save(ctx context.Context, d bluetooth.Device) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -74,8 +75,8 @@ func (r *DeviceRepository) FindByAddress(ctx context.Context, address bluetooth.
 	return r.devices[i], nil
 }
 
-// List devuelve una copia: sin ella, quien la reciba podría reordenar o
-// sobrescribir el almacén.
+// List returns a copy: without it, the receiver could reorder or overwrite the
+// store.
 func (r *DeviceRepository) List(ctx context.Context) ([]bluetooth.Device, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -89,8 +90,8 @@ func (r *DeviceRepository) List(ctx context.Context) ([]bluetooth.Device, error)
 	return out, nil
 }
 
-// indexOf devuelve la posición de address, o -1. Se llama con el candado
-// tomado.
+// indexOf returns the position of address, or -1. It is called with the lock
+// held.
 func (r *DeviceRepository) indexOf(address bluetooth.Address) int {
 	for i, d := range r.devices {
 		if d.Address().Equals(address) {

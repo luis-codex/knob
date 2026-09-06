@@ -6,17 +6,17 @@ import (
 	"settings-cli/internal/domain/errs"
 )
 
-// Errores del dominio. Se comparan con errors.Is y llevan clase errs.Kind
-// para que las capas superiores reaccionen sin conocer este paquete.
+// Domain errors. They are compared with errors.Is and carry an errs.Kind
+// class so the upper layers can react without knowing this package.
 var (
-	ErrInvalidID       = errs.Invalid("identificador de dispositivo inválido")
-	ErrInvalidStreamID = errs.Invalid("identificador de flujo inválido")
-	ErrEmptyName       = errs.Invalid("el nombre no puede estar vacío")
-	ErrNameTooLong     = errs.Invalid(fmt.Sprintf("el nombre supera los %d caracteres", MaxNameLength))
-	ErrInvalidVolume   = errs.Invalid(fmt.Sprintf("el volumen debe estar entre 0 y %d", MaxVolume))
+	ErrInvalidID       = errs.Invalid("invalid device identifier")
+	ErrInvalidStreamID = errs.Invalid("invalid stream identifier")
+	ErrEmptyName       = errs.Invalid("name must not be empty")
+	ErrNameTooLong     = errs.Invalid(fmt.Sprintf("name exceeds %d characters", MaxNameLength))
+	ErrInvalidVolume   = errs.Invalid(fmt.Sprintf("volume must be between 0 and %d", MaxVolume))
 
-	ErrWrongDirection = errs.Conflict("el dispositivo no es de ese tipo")
+	ErrWrongDirection = errs.Conflict("the device is not of that kind")
 
-	ErrNotFound       = errs.NotFound("el dispositivo de audio no existe")
-	ErrStreamNotFound = errs.NotFound("el flujo de audio ya no existe")
+	ErrNotFound       = errs.NotFound("the audio device does not exist")
+	ErrStreamNotFound = errs.NotFound("the audio stream no longer exists")
 )

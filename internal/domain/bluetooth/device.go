@@ -1,6 +1,5 @@
-// Package bluetooth contiene el agregado de dispositivos Bluetooth, sus
-// objetos de valor y el puerto de persistencia. No depende de ninguna otra
-// capa.
+// Package bluetooth holds the Bluetooth-device aggregate, its value objects
+// and the persistence port. It depends on no other layer.
 package bluetooth
 
 import (
@@ -9,22 +8,22 @@ import (
 )
 
 const (
-	// MaxNameLength es el límite del nombre, en caracteres.
+	// MaxNameLength is the name limit, in characters.
 	MaxNameLength = 64
-	// addressOctets son los pares hexadecimales de una MAC.
+	// addressOctets is the number of hex pairs in a MAC.
 	addressOctets = 6
 )
 
-// State es la situación del dispositivo. Las transiciones válidas son
-// Discovered → Paired → Connected y sus inversas.
+// State is the device's situation. The valid transitions are
+// Discovered -> Paired -> Connected and their reverses.
 type State int
 
 const (
-	// StateDiscovered: visible pero no emparejado.
+	// StateDiscovered: visible but not paired.
 	StateDiscovered State = iota
-	// StatePaired: emparejado y sin conexión activa.
+	// StatePaired: paired with no active connection.
 	StatePaired
-	// StateConnected: emparejado y conectado.
+	// StateConnected: paired and connected.
 	StateConnected
 )
 
@@ -39,11 +38,11 @@ func (s State) String() string {
 	}
 }
 
-// IsPaired incluye StateConnected: conectarse exige haber emparejado antes.
+// IsPaired includes StateConnected: connecting requires having paired first.
 func (s State) IsPaired() bool { return s == StatePaired || s == StateConnected }
 
-// Kind es el tipo de dispositivo. String devuelve un identificador estable,
-// no una etiqueta de pantalla: traducirlo es cosa de la interfaz.
+// Kind is the device type. String returns a stable identifier, not a display
+// label: translating it is the interface's job.
 type Kind int
 
 const (
@@ -71,7 +70,7 @@ func (k Kind) String() string {
 	return kindNames[KindUnknown]
 }
 
-// ParseKind reconstruye un Kind desde su identificador.
+// ParseKind rebuilds a Kind from its identifier.
 func ParseKind(s string) (Kind, error) {
 	s = strings.ToLower(strings.TrimSpace(s))
 	for kind, name := range kindNames {
@@ -82,14 +81,14 @@ func ParseKind(s string) (Kind, error) {
 	return KindUnknown, ErrUnknownKind
 }
 
-// Address es una dirección MAC. Identifica al dispositivo.
+// Address is a MAC address. It identifies the device.
 type Address struct {
 	value string
 }
 
-// NewAddress valida y normaliza una MAC. Acepta ':' y '-' como separadores y
-// devuelve siempre el formato con ':' en mayúsculas, para que la misma
-// dirección escrita de dos maneras sea el mismo Address.
+// NewAddress validates and normalizes a MAC. It accepts ':' and '-' as
+// separators and always returns the ':' form in uppercase, so the same
+// address written two ways is the same Address.
 func NewAddress(s string) (Address, error) {
 	parts := strings.Split(strings.ReplaceAll(strings.TrimSpace(s), "-", ":"), ":")
 	if len(parts) != addressOctets {
@@ -123,12 +122,12 @@ func (a Address) IsZero() bool { return a.value == "" }
 
 func (a Address) Equals(other Address) bool { return a.value == other.value }
 
-// Name es el nombre validado de un dispositivo.
+// Name is a device's validated name.
 type Name struct {
 	value string
 }
 
-// NewName valida y recorta un nombre.
+// NewName validates and trims a name.
 func NewName(s string) (Name, error) {
 	s = strings.TrimSpace(s)
 
@@ -146,14 +145,14 @@ func (n Name) String() string { return n.value }
 
 func (n Name) IsZero() bool { return n.value == "" }
 
-// Battery es un nivel de carga que puede ser desconocido. El valor cero es
-// "desconocido" y no "0 %", que es lo que hace seguro no informarlo.
+// Battery is a charge level that may be unknown. The zero value is "unknown",
+// not "0%", which is what makes not reporting it safe.
 type Battery struct {
 	level int
 	known bool
 }
 
-// NewBattery acepta niveles de 0 a 100.
+// NewBattery accepts levels from 0 to 100.
 func NewBattery(level int) (Battery, error) {
 	if level < 0 || level > 100 {
 		return Battery{}, ErrInvalidBattery
@@ -161,16 +160,16 @@ func NewBattery(level int) (Battery, error) {
 	return Battery{level: level, known: true}, nil
 }
 
-// UnknownBattery es el nivel de un dispositivo que no lo informa.
+// UnknownBattery is the level of a device that does not report it.
 func UnknownBattery() Battery { return Battery{} }
 
-// Level solo es significativo si Known es true.
+// Level is only meaningful when Known is true.
 func (b Battery) Level() int { return b.level }
 
 func (b Battery) Known() bool { return b.known }
 
-// Device es el agregado. Sus campos no se exportan: solo Discover y Restore
-// construyen dispositivos válidos, y el estado solo cambia por transiciones.
+// Device is the aggregate. Its fields are unexported: only Discover and
+// Restore build valid devices, and the state changes only through transitions.
 type Device struct {
 	address Address
 	name    Name
@@ -179,7 +178,7 @@ type Device struct {
 	battery Battery
 }
 
-// Discover registra un dispositivo recién visto, sin emparejar.
+// Discover records a just-seen device, not yet paired.
 func Discover(address Address, name Name, kind Kind) (Device, error) {
 	switch {
 	case address.IsZero():
@@ -197,7 +196,7 @@ func Discover(address Address, name Name, kind Kind) (Device, error) {
 	}, nil
 }
 
-// Restore reconstruye un dispositivo existente desde el almacenamiento.
+// Restore rebuilds an existing device from storage.
 func Restore(address Address, name Name, kind Kind, state State, battery Battery) (Device, error) {
 	device, err := Discover(address, name, kind)
 	if err != nil {
@@ -220,7 +219,7 @@ func (d Device) Battery() Battery { return d.battery }
 
 func (d Device) IsZero() bool { return d.address.IsZero() }
 
-// Pair empareja un dispositivo descubierto.
+// Pair pairs a discovered device.
 func (d Device) Pair() (Device, error) {
 	if d.state.IsPaired() {
 		return Device{}, ErrAlreadyPaired
@@ -229,8 +228,8 @@ func (d Device) Pair() (Device, error) {
 	return d, nil
 }
 
-// Unpair olvida el dispositivo. Desconecta de paso si hacía falta: obligar a
-// desconectar antes solo trasladaría el paso al llamante.
+// Unpair forgets the device. It disconnects along the way if needed: forcing
+// a disconnect first would only push the step onto the caller.
 func (d Device) Unpair() (Device, error) {
 	if !d.state.IsPaired() {
 		return Device{}, ErrNotPaired
@@ -240,7 +239,7 @@ func (d Device) Unpair() (Device, error) {
 	return d, nil
 }
 
-// Connect exige que el dispositivo esté emparejado.
+// Connect requires the device to be paired.
 func (d Device) Connect() (Device, error) {
 	switch d.state {
 	case StateConnected:
@@ -253,7 +252,7 @@ func (d Device) Connect() (Device, error) {
 	return d, nil
 }
 
-// Disconnect deja el dispositivo emparejado.
+// Disconnect leaves the device paired.
 func (d Device) Disconnect() (Device, error) {
 	if d.state != StateConnected {
 		return Device{}, ErrNotConnected
@@ -262,7 +261,7 @@ func (d Device) Disconnect() (Device, error) {
 	return d, nil
 }
 
-// Rename cambia el nombre visible sin tocar el estado.
+// Rename changes the visible name without touching the state.
 func (d Device) Rename(name Name) (Device, error) {
 	if name.IsZero() {
 		return Device{}, ErrEmptyName
@@ -271,8 +270,8 @@ func (d Device) Rename(name Name) (Device, error) {
 	return d, nil
 }
 
-// ReportBattery actualiza la carga. Solo tiene sentido conectado: un
-// dispositivo que no lo está no informa de nada.
+// ReportBattery updates the charge. It only makes sense while connected: a
+// device that is not connected reports nothing.
 func (d Device) ReportBattery(battery Battery) (Device, error) {
 	if d.state != StateConnected {
 		return Device{}, ErrNotConnected

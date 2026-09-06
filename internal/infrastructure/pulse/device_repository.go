@@ -9,7 +9,7 @@ import (
 	"settings-cli/internal/domain/errs"
 )
 
-// Repository expone los dispositivos de sonido del servidor.
+// Repository exposes the server's sound devices.
 type Repository struct{}
 
 var _ audio.Repository = (*Repository)(nil)
@@ -41,7 +41,7 @@ func (r *Repository) List(ctx context.Context, direction audio.Direction) ([]aud
 	return devices, nil
 }
 
-// defaultName lee el predeterminado de la dirección desde `pactl info`.
+// defaultName reads the direction's default from `pactl info`.
 func (r *Repository) defaultName(ctx context.Context, direction audio.Direction) (string, error) {
 	raw, err := run(ctx, "info")
 	if err != nil {
@@ -50,7 +50,7 @@ func (r *Repository) defaultName(ctx context.Context, direction audio.Direction)
 
 	var info jsonInfo
 	if err := json.Unmarshal(raw, &info); err != nil {
-		return "", errs.Wrap(errs.KindConflict, "respuesta ilegible del servidor de sonido", err)
+		return "", errs.Wrap(errs.KindConflict, "unreadable response from the sound server", err)
 	}
 
 	if direction == audio.Input {
@@ -59,7 +59,8 @@ func (r *Repository) defaultName(ctx context.Context, direction audio.Direction)
 	return info.DefaultSink, nil
 }
 
-// FindByID busca en ambas direcciones: el identificador no dice de cuál es.
+// FindByID searches both directions: the identifier does not say which one it
+// belongs to.
 func (r *Repository) FindByID(ctx context.Context, id audio.ID) (audio.Device, error) {
 	for _, direction := range []audio.Direction{audio.Output, audio.Input} {
 		devices, err := r.List(ctx, direction)
@@ -76,8 +77,8 @@ func (r *Repository) FindByID(ctx context.Context, id audio.ID) (audio.Device, e
 	return audio.Device{}, audio.ErrNotFound
 }
 
-// Save aplica volumen y silencio. Ambos comandos son idempotentes, así que no
-// hace falta comparar antes con el estado actual.
+// Save applies volume and mute. Both commands are idempotent, so there is no
+// need to compare against the current state first.
 func (r *Repository) Save(ctx context.Context, d audio.Device) error {
 	if d.IsZero() {
 		return audio.ErrInvalidID
@@ -98,8 +99,8 @@ func (r *Repository) Save(ctx context.Context, d audio.Device) error {
 	return err
 }
 
-// SetDefault necesita saber la dirección, que no está en el identificador: se
-// resuelve leyendo el dispositivo primero.
+// SetDefault needs to know the direction, which is not in the identifier: it
+// is resolved by reading the device first.
 func (r *Repository) SetDefault(ctx context.Context, id audio.ID) error {
 	device, err := r.FindByID(ctx, id)
 	if err != nil {

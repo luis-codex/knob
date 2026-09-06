@@ -1,8 +1,8 @@
-// Package pages contiene las pantallas de la app: un fichero por entrada del
-// menú. Cada página compone sus secciones desde internal/ui.
+// Package pages holds the app's screens: one file per menu entry. Each page
+// composes its sections from internal/ui.
 //
-// Este fichero no es una página: son el marco común y los helpers de texto que
-// comparten todas.
+// This file is not a page: it is the common frame and the text helpers every
+// page shares.
 package pages
 
 import (
@@ -10,39 +10,38 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/x/ansi"
 
 	"settings-cli/internal/shared/styles"
 )
 
-// frameChrome son las filas que frame añade por su cuenta: el título, la
-// regla que lo separa y la línea en blanco. Las páginas lo restan para medir
-// cuánto alto le queda a su contenido.
+// frameChrome is the rows frame adds on its own: the title, the rule that
+// separates it and the blank line. Pages subtract it to measure how much
+// height is left for their content.
 const frameChrome = 3
 
-// frame renderiza el esqueleto común: título, separación y cuerpo.
+// frame renders the common skeleton: title, separator and body.
 func frame(t styles.Theme, width, height int, title string, rows ...string) string {
 	inner := width - t.Body.Base.GetHorizontalFrameSize()
 	if inner <= 0 {
 		return ""
 	}
 
-	// Una regla bajo el título separa la cabecera del contenido, como el
-	// borde superior de las tarjetas de bun.com. Sin ella la página es un
-	// bloque plano de texto.
+	// A rule under the title separates the header from the content, like the
+	// top border of bun.com's cards. Without it the page is a flat block of
+	// text.
 	lines := append([]string{
 		t.Body.Title.Render(title),
 		t.Divider.Render(strings.Repeat(t.Icon.DividerH, max(inner, 0))),
 		"",
 	}, rows...)
 
-	// Height rellena pero no recorta; sin MaxHeight el body desbordaría.
+	// Height pads but does not clip; without MaxHeight the body would overflow.
 	return t.Body.Base.Width(width).Height(height).MaxHeight(height).Render(
 		lipgloss.JoinVertical(lipgloss.Left, lines...),
 	)
 }
 
-// fit recorta s a width columnas respetando los códigos ANSI.
+// fit clips s to width columns, respecting the ANSI codes.
 func fit(s string, width int) string {
 	if width <= 0 {
 		return ""
@@ -50,39 +49,9 @@ func fit(s string, width int) string {
 	return lipgloss.NewStyle().MaxWidth(width).Render(s)
 }
 
-// ellipsis recorta s a width columnas con el símbolo del tema, para cortes
-// que lee una persona. Para rellenar filas basta con fit.
-func ellipsis(t styles.Theme, s string, width int) string {
-	if width <= 0 {
-		return ""
-	}
-	if ansi.StringWidth(s) <= width {
-		return s
-	}
-	return ansi.Truncate(s, width, t.Icon.Ellipsis)
-}
+// --- text -----------------------------------------------------------------
 
-// --- texto ------------------------------------------------------------------
-
-// spaces devuelve n espacios. Rellena columnas de una rejilla, donde el hueco
-// debe existir aunque no haya contenido.
-func spaces(n int) string {
-	if n <= 0 {
-		return ""
-	}
-	return strings.Repeat(" ", n)
-}
-
-// pad y padLeft ajustan s a width alineándolo a un lado o al otro.
-func pad(s string, width int) string {
-	return s + spaces(width-ansi.StringWidth(s))
-}
-
-func padLeft(s string, width int) string {
-	return spaces(width-ansi.StringWidth(s)) + s
-}
-
-// plural formatea un recuento con su sustantivo.
+// plural formats a count with its noun.
 func plural(n int, one, many string) string {
 	if n == 1 {
 		return "1 " + one

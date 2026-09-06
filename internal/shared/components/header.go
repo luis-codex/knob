@@ -8,8 +8,8 @@ import (
 	"settings-cli/internal/shared/styles"
 )
 
-// Header es la barra superior: el nombre de la aplicación y, a la derecha, la
-// sección en la que estás.
+// Header is the top bar: the application name and, on the right, the section
+// you are in.
 type Header struct {
 	Name    string
 	Section string
@@ -19,7 +19,7 @@ func NewHeader() Header {
 	return Header{Name: "settings"}
 }
 
-// WithSection devuelve una copia indicando dónde está el usuario.
+// WithSection returns a copy noting where the user is.
 func (c Header) WithSection(section string) Header {
 	c.Section = section
 	return c

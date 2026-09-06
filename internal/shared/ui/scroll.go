@@ -2,9 +2,9 @@ package ui
 
 import "settings-cli/internal/shared/styles"
 
-// ScrollOffset ajusta prev para que cursor quede dentro de la ventana,
-// desplazando lo mínimo. Requiere recordar el offset entre renders, a cambio
-// de que la vista no salte al mover el cursor.
+// ScrollOffset adjusts prev so that cursor lands inside the window, moving the
+// minimum. It requires remembering the offset between renders, in exchange for
+// the view not jumping when the cursor moves.
 func ScrollOffset(prev, cursor, total, height int) int {
 	if height <= 0 || total <= height {
 		return 0
@@ -21,8 +21,8 @@ func ScrollOffset(prev, cursor, total, height int) int {
 	return min(max(offset, 0), maxOffset)
 }
 
-// CenteredOffset centra cursor en la ventana. No necesita recordar nada, a
-// cambio de desplazar en cada movimiento: solo vale para listas cortas.
+// CenteredOffset centers cursor in the window. It needs to remember nothing,
+// in exchange for scrolling on every move: it is only good for short lists.
 func CenteredOffset(cursor, total, height int) int {
 	if height <= 0 || total <= height {
 		return 0
@@ -30,19 +30,20 @@ func CenteredOffset(cursor, total, height int) int {
 	return min(max(cursor-height/2, 0), total-height)
 }
 
-// Scrollbar devuelve una columna de height filas indicando qué porción de
-// total se está viendo. Vacía si cabe todo.
+// Scrollbar returns a column of the given height showing which portion of
+// total is on screen. Empty if everything fits.
 func Scrollbar(t styles.Theme, total, offset, height int) []string {
 	if height <= 0 || total <= height {
 		return nil
 	}
 
-	// El pulgar guarda la proporción visible, con un mínimo de una fila para
-	// que no desaparezca en listas muy largas.
+	// The thumb keeps the visible proportion, with a minimum of one row so it
+	// does not vanish in very long lists.
 	thumb := max(1, height*height/total)
 
-	// El recorrido va de 0 a height-thumb y se reparte sobre el rango real de
-	// offsets. Escalarlo sobre total dejaría el pulgar sin llegar al fondo.
+	// The travel goes from 0 to height-thumb and is spread over the real range
+	// of offsets. Scaling it over total would leave the thumb short of the
+	// bottom.
 	travel, maxOffset := height-thumb, total-height
 	start := 0
 	if maxOffset > 0 {
@@ -60,9 +61,9 @@ func Scrollbar(t styles.Theme, total, offset, height int) []string {
 	return col
 }
 
-// JoinScrollbar pega la columna a la derecha de las filas. Sin barra rellena
-// con espacios: el hueco lo reserva el llamante en todo caso, así que dejarlo
-// vacío descuadraría el ancho.
+// JoinScrollbar glues the column to the right of the rows. With no bar it pads
+// with spaces: the caller reserves the slot in any case, so leaving it empty
+// would throw off the width.
 func JoinScrollbar(rows, bar []string) []string {
 	out := make([]string, len(rows))
 	for i, row := range rows {

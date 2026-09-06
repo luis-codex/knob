@@ -2,9 +2,9 @@ package ui
 
 import "charm.land/lipgloss/v2"
 
-// Overlay compone top centrado sobre base, que sigue visible alrededor.
+// Overlay composes top centered over base, which stays visible around it.
 //
-// Usa Compositor y no Canvas: Canvas.Compose() ignora el X/Y de la capa.
+// It uses Compositor and not Canvas: Canvas.Compose() ignores the layer's X/Y.
 func Overlay(base string, width, height int, top string) string {
 	if width <= 0 || height <= 0 || top == "" {
 		return base
@@ -19,7 +19,8 @@ func Overlay(base string, width, height int, top string) string {
 		lipgloss.NewLayer(top).X(x).Y(y).Z(1),
 	).Render()
 
-	// Los límites del compositor son la unión de las capas: si top no cabe,
-	// el resultado sale más grande que el área y descuadra el layout entero.
+	// The compositor's bounds are the union of the layers: if top does not
+	// fit, the result comes out larger than the area and throws off the whole
+	// layout.
 	return lipgloss.NewStyle().MaxWidth(width).MaxHeight(height).Render(composed)
 }

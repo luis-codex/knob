@@ -11,27 +11,27 @@ import (
 	"settings-cli/internal/shared/ui"
 )
 
-// DialogAction es lo que una pulsación provoca en el diálogo.
+// DialogAction is what a keypress causes in the dialog.
 type DialogAction int
 
 const (
-	// DialogNone: el diálogo sigue abierto, no hay nada que aplicar.
+	// DialogNone: the dialog stays open, there is nothing to apply.
 	DialogNone DialogAction = iota
-	// DialogAccept: el usuario aceptó (botón primario).
+	// DialogAccept: the user accepted (primary button).
 	DialogAccept
-	// DialogDismiss: el usuario canceló (botón secundario o esc).
+	// DialogDismiss: the user cancelled (secondary button or esc).
 	DialogDismiss
 )
 
-// Dialog es un modal de confirmación (mensaje) o de formulario (campo de
-// texto). Es un solo tipo porque comparten marco, foco y teclado: lo único
-// que cambia es una fila.
+// Dialog is a confirmation modal (message) or a form modal (text field). It is
+// a single type because they share frame, focus and keyboard: the only thing
+// that changes is one row.
 type Dialog struct {
 	title   string
 	message string
 
-	// hasInput distingue las dos formas. Por valor, para que copiar el
-	// Dialog no comparta buffer.
+	// hasInput tells the two forms apart. By value, so copying the Dialog
+	// does not share the buffer.
 	hasInput    bool
 	label       string
 	placeholder string
@@ -39,26 +39,26 @@ type Dialog struct {
 
 	accept  string
 	dismiss string
-	// errMsg es un fallo de validación; se muestra dentro sin cerrar.
+	// errMsg is a validation failure; shown inside without closing.
 	errMsg string
-	// dangerous pinta el botón primario como destructivo.
+	// dangerous renders the primary button as destructive.
 	dangerous bool
 
 	focus int // 0 = accept, 1 = dismiss
 	open  bool
 }
 
-// NewConfirmDialog crea un diálogo de confirmación.
+// NewConfirmDialog creates a confirmation dialog.
 func NewConfirmDialog(title, message, accept string) Dialog {
 	return Dialog{
 		title:   title,
 		message: message,
 		accept:  accept,
-		dismiss: "Cancelar",
+		dismiss: "Cancel",
 	}
 }
 
-// NewFormDialog crea un diálogo con un campo de texto.
+// NewFormDialog creates a dialog with a text field.
 func NewFormDialog(title, label, placeholder, accept string) Dialog {
 	return Dialog{
 		title:       title,
@@ -66,29 +66,29 @@ func NewFormDialog(title, label, placeholder, accept string) Dialog {
 		placeholder: placeholder,
 		hasInput:    true,
 		accept:      accept,
-		dismiss:     "Cancelar",
+		dismiss:     "Cancel",
 	}
 }
 
-// Dangerous marca la acción primaria como destructiva.
+// Dangerous marks the primary action as destructive.
 func (d Dialog) Dangerous() Dialog {
 	d.dangerous = true
 	return d
 }
 
-// WithValue precarga el campo de texto.
+// WithValue pre-fills the text field.
 func (d Dialog) WithValue(value string) Dialog {
 	d.input = NewTextInput(value)
 	return d
 }
 
-// Open abre el diálogo con el foco en el botón primario.
+// Open opens the dialog with focus on the primary button.
 func (d Dialog) Open() Dialog {
 	d.open, d.focus, d.errMsg = true, 0, ""
 	return d
 }
 
-// WithError muestra un fallo dentro del diálogo, que permanece abierto.
+// WithError shows a failure inside the dialog, which stays open.
 func (d Dialog) WithError(msg string) Dialog {
 	d.errMsg = msg
 	return d
@@ -101,13 +101,13 @@ func (d Dialog) Close() Dialog {
 
 func (d Dialog) IsOpen() bool { return d.open }
 
-// Value es el texto del campo, ya recortado.
+// Value is the field's text, already trimmed.
 func (d Dialog) Value() string { return d.input.Trimmed() }
 
-// HandleKey procesa una pulsación y devuelve el diálogo actualizado y la
-// acción resultante. Consume todas las teclas mientras esté abierto.
+// HandleKey processes a keypress and returns the updated dialog and the
+// resulting action. It consumes every key while open.
 func (d Dialog) HandleKey(msg tea.KeyPressMsg) (Dialog, DialogAction) {
-	d.errMsg = "" // cualquier pulsación descarta el fallo anterior
+	d.errMsg = "" // any keypress dismisses the previous failure
 
 	switch msg.String() {
 	case "esc":
@@ -126,8 +126,8 @@ func (d Dialog) HandleKey(msg tea.KeyPressMsg) (Dialog, DialogAction) {
 		return d.focusPrev(), DialogNone
 	}
 
-	// Con campo, las flechas y letras son escritura y el foco solo se mueve
-	// con tab. Sin campo, cualquier movimiento lateral cambia de botón.
+	// With a field, arrows and letters are typing and focus only moves with
+	// tab. Without a field, any sideways move switches button.
 	if d.hasInput {
 		input, typed := d.input.TypeKey(msg)
 		if typed {
@@ -151,30 +151,30 @@ func (d Dialog) focusNext() Dialog {
 }
 
 func (d Dialog) focusPrev() Dialog {
-	d.focus = (d.focus + 1) % 2 // con dos botones coincide con focusNext
+	d.focus = (d.focus + 1) % 2 // with two buttons this matches focusNext
 	return d
 }
 
-// View recibe el área disponible, no su propio tamaño: el diálogo decide
-// cuánto ocupa y quien lo compone lo centra.
+// View receives the available area, not its own size: the dialog decides how
+// much it takes and whoever composes it centers it.
 func (d Dialog) View(t styles.Theme, width, height int) string {
-	// En lipgloss v2, Width(n) es el ancho TOTAL: borde y padding van dentro.
-	// Dimensionar el contenido al ancho externo hace que el marco lo envuelva.
+	// In lipgloss v2, Width(n) is the TOTAL width: border and padding go
+	// inside. Sizing the content to the outer width makes the frame wrap it.
 	box := min(styles.DialogWidth, width-4)
 	content := box - t.Dialog.Box.GetHorizontalFrameSize()
 	if content < 16 {
 		return ""
 	}
 
-	// Filas que caben dentro del marco. Un diálogo más alto que su hueco
-	// haría crecer el layout en vez de quedarse dentro.
+	// Rows that fit inside the frame. A dialog taller than its slot would grow
+	// the layout instead of staying inside.
 	maxRows := height - 2 - t.Dialog.Box.GetVerticalFrameSize()
 	if maxRows < 3 {
 		return ""
 	}
 
-	// Cada tramo por separado: envolver todo en un estilo hace que el reset
-	// de un tramo interno se coma el color del resto.
+	// Each span separately: wrapping everything in one style makes an inner
+	// span's reset eat the rest's color.
 	rows := []string{
 		t.Dialog.Title.Width(content).Render(d.title),
 		t.Dialog.Text.Width(content).Render(""),
@@ -188,11 +188,11 @@ func (d Dialog) View(t styles.Theme, width, height int) string {
 		lipgloss.NewStyle().Width(content).Align(lipgloss.Center).Render(d.buttons(t)),
 	)
 
-	// La ayuda es lo primero que sobra cuando falta alto: sin ella el diálogo
-	// sigue siendo usable, sin los botones no.
+	// The help is the first thing to drop when height is short: without it the
+	// dialog is still usable, without the buttons it is not.
 	hint := []string{
 		t.Dialog.Text.Width(content).Render(""),
-		// MaxWidth: una ayuda que envuelve estira la caja y descuadra el modal.
+		// MaxWidth: a wrapping hint stretches the box and throws off the modal.
 		t.Dialog.Hint.Width(content).MaxWidth(content).Align(lipgloss.Center).Render(d.hint()),
 	}
 	if len(rows)+len(hint) <= maxRows {
@@ -209,8 +209,8 @@ func (d Dialog) View(t styles.Theme, width, height int) string {
 	)
 }
 
-// trimBlanks quita líneas en blanco intermedias mientras sobren filas. Se
-// aprieta el diálogo antes que renunciar a mostrarlo.
+// trimBlanks removes mid blank lines while there are extra rows. The dialog is
+// squeezed before giving up on showing it.
 func trimBlanks(rows []string, maxRows int) []string {
 	for len(rows) > maxRows {
 		removed := false
@@ -229,13 +229,13 @@ func trimBlanks(rows []string, maxRows int) []string {
 	return rows
 }
 
-// contentRows es la única diferencia real entre las dos formas del diálogo.
+// contentRows is the only real difference between the two forms of the dialog.
 func (d Dialog) contentRows(t styles.Theme, width int) []string {
 	if !d.hasInput {
 		return []string{t.Dialog.Text.Width(width).Render(d.message)}
 	}
 
-	// La etiqueta va sobre el campo para que este ocupe el ancho completo.
+	// The label goes above the field so the field takes the full width.
 	return []string{
 		t.Dialog.Label.Width(width).Render(d.label),
 		ui.TextField(t, ui.TextFieldOpts{
@@ -255,7 +255,7 @@ func (d Dialog) buttons(t styles.Theme) string {
 
 func (d Dialog) hint() string {
 	if d.hasInput {
-		return "tab · enter aceptar · esc cancelar"
+		return "tab · enter accept · esc cancel"
 	}
-	return "←→ · enter aceptar · esc cancelar"
+	return "←→ · enter accept · esc cancel"
 }

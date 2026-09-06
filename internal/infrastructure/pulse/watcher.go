@@ -12,22 +12,22 @@ import (
 	"settings-cli/internal/domain/errs"
 )
 
-// watched son los objetos cuyos eventos disparan una relectura.
+// watched is the set of objects whose events trigger a re-read.
 //
-// Queda fuera "client": cada invocación de pactl —cada relectura incluida—
-// abre y cierra un cliente, así que escucharlo realimentaría el bucle. Los
-// sink-input sí interesan: son los flujos del mezclador, y nacen, cambian o
-// mueren cuando una aplicación empieza, pausa o para de sonar. Listarlos con
-// pactl no crea ninguno, de modo que no hay realimentación.
+// "client" is left out: every pactl invocation -- every re-read included --
+// opens and closes a client, so listening to it would feed the loop back into
+// itself. sink-input events do matter: they are the mixer streams, and they
+// are born, change or die when an application starts, pauses or stops playing.
+// Listing them with pactl creates none, so there is no feedback.
 var watched = map[string]bool{
 	"sink":       true,
 	"source":     true,
-	"sink-input": true, // flujos del mezclador
-	"server":     true, // cambia al cambiar el predeterminado
-	"card":       true, // enchufar o quitar un dispositivo
+	"sink-input": true, // mixer streams
+	"server":     true, // changes when the default changes
+	"card":       true, // plugging or unplugging a device
 }
 
-// Watcher escucha `pactl subscribe`.
+// Watcher listens to `pactl subscribe`.
 type Watcher struct{}
 
 var _ audio.Watcher = (*Watcher)(nil)
@@ -37,25 +37,26 @@ func NewWatcher() *Watcher { return &Watcher{} }
 func (w *Watcher) Changes(ctx context.Context) (<-chan struct{}, error) {
 	cmd := exec.CommandContext(ctx, binary, "subscribe")
 
-	// `pactl subscribe` no termina solo: sin cancelar el contexto queda
-	// huérfano al cerrar la aplicación.
+	// `pactl subscribe` does not end on its own: without cancelling the
+	// context it is orphaned when the application closes.
 	//
-	// No se usa Pdeathsig porque no es fiable en Go: se dispara al morir el
-	// hilo que lanzó el proceso, y el runtime mueve las goroutines entre
-	// hilos. WaitDelay asegura el SIGKILL si el SIGTERM no basta.
+	// Pdeathsig is not used because it is not reliable in Go: it fires when
+	// the thread that launched the process dies, and the runtime moves
+	// goroutines between threads. WaitDelay ensures the SIGKILL if the
+	// SIGTERM is not enough.
 	cmd.Cancel = func() error { return cmd.Process.Signal(syscall.SIGTERM) }
 	cmd.WaitDelay = 2 * time.Second
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, errs.Wrap(errs.KindConflict, "no se pudo escuchar al servidor de sonido", err)
+		return nil, errs.Wrap(errs.KindConflict, "could not listen to the sound server", err)
 	}
 	if err := cmd.Start(); err != nil {
-		return nil, errs.Wrap(errs.KindConflict, "no se pudo escuchar al servidor de sonido", err)
+		return nil, errs.Wrap(errs.KindConflict, "could not listen to the sound server", err)
 	}
 
-	// Capacidad 1: los avisos se funden en vez de encolarse. Una ráfaga de
-	// eventos debe provocar una relectura, no veinte.
+	// Capacity 1: notifications coalesce rather than queue. A burst of events
+	// must cause one re-read, not twenty.
 	changes := make(chan struct{}, 1)
 
 	go func() {
@@ -72,7 +73,7 @@ func (w *Watcher) Changes(ctx context.Context) (<-chan struct{}, error) {
 			case changes <- struct{}{}:
 			case <-ctx.Done():
 				return
-			default: // ya hay un aviso pendiente: sobra mandar otro
+			default: // a notification is already pending: no need to send another
 			}
 		}
 	}()
@@ -80,15 +81,15 @@ func (w *Watcher) Changes(ctx context.Context) (<-chan struct{}, error) {
 	return changes, nil
 }
 
-// relevant decide si una línea "Event 'change' on sink #58" interesa.
+// relevant decides whether a line "Event 'change' on sink #58" matters.
 func relevant(line string) bool {
 	_, target, ok := strings.Cut(line, " on ")
 	if !ok {
 		return false
 	}
 
-	// "sink #58" -> "sink". El token va entero: "sink" y "sink-input" son
-	// objetos distintos y se miran por separado en watched.
+	// "sink #58" -> "sink". The token is kept whole: "sink" and "sink-input"
+	// are different objects and are checked separately in watched.
 	object, _, _ := strings.Cut(strings.TrimSpace(target), " ")
 	return watched[object]
 }
