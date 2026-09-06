@@ -32,6 +32,17 @@ func (l *List) Prev() {
 	l.clampCursor()
 }
 
+// ToFirst parks the cursor on the first row. Used when focus enters the list
+// from above.
+func (l *List) ToFirst() { l.cursor = 0 }
+
+// ToLast parks the cursor on the last row, per the current count. Used when
+// focus enters the list from below.
+func (l *List) ToLast() {
+	l.cursor = l.count - 1
+	l.clampCursor()
+}
+
 // SetCount re-adjusts the cursor after the data changes. Mandatory when
 // filtering or deleting, or the cursor points to an index that no longer
 // exists.
