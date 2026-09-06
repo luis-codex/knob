@@ -274,13 +274,13 @@ func (p *Audio) HandleMsg(msg tea.Msg) tea.Cmd {
 func (p *Audio) HandleKey(msg tea.KeyPressMsg) (bool, tea.Cmd) {
 	switch msg.String() {
 	case "up", "k":
-		p.list(p.focused).Prev()
+		p.moveCursor(-1)
 	case "down", "j":
-		p.list(p.focused).Next()
+		p.moveCursor(+1)
 	case "tab":
-		p.focused = (p.focused + 1) % section(len(sections))
+		p.jumpSection(+1)
 	case "shift+tab":
-		p.focused = (p.focused - 1 + section(len(sections))) % section(len(sections))
+		p.jumpSection(-1)
 	case "left", "h":
 		return true, p.adjust(-volumeStep)
 	case "right", "l":
@@ -293,6 +293,67 @@ func (p *Audio) HandleKey(msg tea.KeyPressMsg) (bool, tea.Cmd) {
 		return false, nil
 	}
 	return true, nil
+}
+
+// items is how many rows section s shows: devices, or streams for the mixer.
+func (p *Audio) items(s section) int {
+	if s == sectionStreams {
+		return len(p.streams)
+	}
+	return len(p.devices(s))
+}
+
+// moveCursor steps the cursor one row (dir -1 up, +1 down) inside the focused
+// section. When it runs off either end it hands focus to the neighbouring
+// non-empty section, landing on the near edge so the body reads as one
+// continuous list. At the very top and bottom it does nothing.
+func (p *Audio) moveCursor(dir int) {
+	l := p.list(p.focused)
+	if next := l.Cursor() + dir; next >= 0 && next < p.items(p.focused) {
+		if dir < 0 {
+			l.Prev()
+		} else {
+			l.Next()
+		}
+		return
+	}
+
+	dst, ok := p.adjacentSection(p.focused, dir)
+	if !ok {
+		return
+	}
+	p.focused = dst
+	if dir < 0 {
+		p.list(dst).ToLast()
+	} else {
+		p.list(dst).ToFirst()
+	}
+}
+
+// adjacentSection is the closest non-empty section from s in direction dir. It
+// does not wrap: !ok means s is already the last non-empty section that way, so
+// the caller leaves the cursor put.
+func (p *Audio) adjacentSection(s section, dir int) (section, bool) {
+	for i := int(s) + dir; i >= 0 && i < len(sections); i += dir {
+		if p.items(sections[i]) > 0 {
+			return sections[i], true
+		}
+	}
+	return 0, false
+}
+
+// jumpSection is tab's fast move: straight to the next non-empty section in
+// dir, wrapping around, keeping each section's own cursor. With every other
+// section empty it stays put.
+func (p *Audio) jumpSection(dir int) {
+	n := len(sections)
+	for step := 1; step < n; step++ {
+		i := ((int(p.focused)+dir*step)%n + n) % n
+		if p.items(sections[i]) > 0 {
+			p.focused = sections[i]
+			return
+		}
+	}
 }
 
 func (p *Audio) adjust(delta int) tea.Cmd {
@@ -385,15 +446,16 @@ func (p *Audio) View(t styles.Theme, width, height int) string {
 	// Every section renders in full; the page stacks them and scrolls the whole
 	// body as one, rather than each list windowing on its own.
 	body := make([]string, 0, 2*height)
-	cursorRow := 0
+	headRow, cursorRow := 0, 0
 	for i, s := range sections {
 		if i > 0 {
 			// A rule and its blank line separate one section from the next.
 			body = append(body, ui.HDivider(t, content), "")
 		}
 		if s == p.focused {
-			// +1 skips the heading, so the window follows the selected row.
-			cursorRow = len(body) + 1 + p.list(s).Cursor()
+			// headRow is the section title; the selected row sits one past it.
+			headRow = len(body)
+			cursorRow = headRow + 1 + p.list(s).Cursor()
 		}
 		body = append(body, p.section(t, s).Render(t, content)...)
 	}
@@ -407,6 +469,13 @@ func (p *Audio) View(t styles.Theme, width, height int) string {
 	// the tail stays pinned to the bottom.
 	viewport := max(height-frameChrome-len(tail), 1)
 	p.bodyOffset = ui.ScrollOffset(p.bodyOffset, cursorRow, len(body), viewport)
+	// Pull the focused section's title back into the window when everything from
+	// the title down to the cursor still fits: ScrollOffset alone lets the title
+	// hide one row above the top after you scroll down into the section and back
+	// up, so it reads as if the titles were pinned outside the scroll.
+	if headRow < p.bodyOffset && cursorRow-headRow < viewport {
+		p.bodyOffset = headRow
+	}
 	bar := ui.Scrollbar(t, len(body), p.bodyOffset, viewport)
 
 	end := min(p.bodyOffset+viewport, len(body))
