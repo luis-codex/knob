@@ -1,0 +1,26 @@
+# golangci-lint v2 — https://golangci-lint.run
+version: "2"
+
+linters:
+  # Keeps the v2 defaults (errcheck, govet, ineffassign, staticcheck, unused)
+  # and adds a few low-noise extras.
+  enable:
+    - bodyclose
+    - misspell
+    - revive
+    - unconvert
+  exclusions:
+    generated: lax
+    rules:
+      - path: _test\.go
+        linters:
+          - bodyclose
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - settings-cli

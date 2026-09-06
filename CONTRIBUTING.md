@@ -1,0 +1,56 @@
+# Contributing
+
+Thanks for your interest in settings-cli. This is a beta project — bug reports,
+small fixes and feedback on the UX are all welcome.
+
+## Getting started
+
+```sh
+git clone https://github.com/luis-codex/settings-cli
+cd settings-cli
+make dev                                  # run the TUI from source
+go run ./cmd/settings -fake-bluetooth      # run with seeded fake devices
+```
+
+`-fake-bluetooth` seeds example devices so you can work on the Bluetooth screen
+without hardware.
+
+## Before opening a PR
+
+```sh
+make check         # gofmt + go vet + go test -race
+make lint          # golangci-lint (install it first)
+```
+
+CI runs the same checks. Keep `gofmt` clean and add tests for behavior changes.
+
+## Conventions
+
+- **Language:** code, comments, docs and commit messages are in English.
+- **Commits:** [Conventional Commits](https://www.conventionalcommits.org)
+  (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`). The changelog is
+  grouped from these.
+- **Comments:** short and precise, godoc style. Explain *why*, not *what*; the
+  long rationale belongs in the PR description, not the code.
+
+## Architecture
+
+Hexagonal / ports-and-adapters, one direction of dependency:
+
+```
+internal/
+  domain/          entities and invariants; ports (interfaces). No I/O.
+  application/     use cases; orchestrate the domain through the ports.
+  infrastructure/  adapters that implement the ports (bluez, pulse, memory, simulated).
+  config/          reads user config and translates it to UI vocabulary.
+  app/, pages/, shared/, ui/   the Bubble Tea model, screens and widgets.
+cmd/settings/      composition root: wires concrete adapters to use cases.
+```
+
+The `cmd/settings/main.go` composition root is the only place that names
+concrete implementations. Swapping a backend is changing those lines.
+
+## License
+
+By contributing you agree that your contributions are licensed under
+[GPL-3.0-or-later](LICENSE).

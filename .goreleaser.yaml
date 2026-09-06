@@ -1,0 +1,120 @@
+# GoReleaser — https://goreleaser.com
+# Local test without publishing:  make snapshot   (goreleaser release --snapshot --clean)
+# Real release:                   push a vX.Y.Z tag  (.github/workflows/release.yml)
+version: 2
+
+project_name: settings-cli
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: settings
+    main: ./cmd/settings
+    binary: settings
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .CommitDate }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    # settings talks to bluez and PulseAudio/PipeWire: it only makes sense on Linux.
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: settings
+    formats:
+      - tar.gz
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+
+checksum:
+  name_template: checksums.txt
+
+nfpms:
+  - id: settings
+    package_name: settings-cli
+    vendor: Luis Tenorio
+    homepage: https://github.com/luis-codex/settings-cli
+    maintainer: Luis Tenorio <luisprograming0@gmail.com>
+    description: System settings (audio, Bluetooth, network) in a TUI.
+    license: GPL-3.0-or-later
+    section: utils
+    bindir: /usr/bin
+    formats:
+      - deb
+      - rpm
+      - archlinux
+    contents:
+      - src: LICENSE
+        dst: /usr/share/licenses/settings-cli/LICENSE
+      - src: README.md
+        dst: /usr/share/doc/settings-cli/README.md
+
+changelog:
+  sort: asc
+  use: github
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: Fixes
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Other changes
+      order: 999
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+      - '^build:'
+      - Merge pull request
+      - Merge branch
+
+release:
+  github:
+    owner: luis-codex
+    name: settings-cli
+  draft: false
+  # A tag with a hyphen (v0.1.0-beta.1) is flagged as a prerelease automatically.
+  prerelease: auto
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+# --- Extra distribution (needs secrets; enable once they are ready) ---
+#
+# AUR: needs an SSH key pair and the AUR git repo.
+# aurs:
+#   - name: settings-cli-bin
+#     homepage: https://github.com/luis-codex/settings-cli
+#     description: System settings in a TUI.
+#     maintainers:
+#       - Luis Tenorio <luisprograming0@gmail.com>
+#     license: GPL-3.0-or-later
+#     private_key: "{{ .Env.AUR_KEY }}"
+#     git_url: ssh://aur@aur.archlinux.org/settings-cli-bin.git
+#
+# Homebrew: needs a homebrew-tap repo and a token with write access.
+# brews:
+#   - repository:
+#       owner: luis-codex
+#       name: homebrew-tap
+#     homepage: https://github.com/luis-codex/settings-cli
+#     description: System settings in a TUI.
+#     license: GPL-3.0-or-later
