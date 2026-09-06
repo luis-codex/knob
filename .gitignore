@@ -18,3 +18,4 @@ coverage.*
 
 # Local environment
 .env
+.serena
