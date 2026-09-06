@@ -21,12 +21,10 @@ type Section struct {
 	Focused bool
 }
 
-// Chrome is the rows a section spends apart from its list: the heading and the
-// blank line that closes it.
-const Chrome = 2
-
-// Render returns the section's rows.
-func (s Section) Render(t styles.Theme, width, height int) []string {
+// Render returns the section's rows: the heading, every meter row and a blank
+// line to close it. It renders in full -- the page stacks the sections and
+// windows the body as one, so the section itself does not scroll.
+func (s Section) Render(t styles.Theme, width int) []string {
 	// The label is uppercase and switches to accent when it has focus.
 	style := t.Body.Section
 	if s.Focused {
@@ -38,7 +36,7 @@ func (s Section) Render(t styles.Theme, width, height int) []string {
 		return []string{heading, t.List.Empty.Render(s.Empty), ""}
 	}
 
-	rows := s.List.Render(t, len(s.Meters), width, height, s.Focused,
+	rows := s.List.RenderFull(t, len(s.Meters), width, s.Focused,
 		func(i int, base lipgloss.Style, w int) string {
 			return Row(t, s.Meters[i], base, w)
 		},
