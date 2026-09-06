@@ -84,9 +84,3 @@ make install        # builds with version info, installs to $GOBIN / $GOPATH/bin
 knob stores an optional theme at `~/.config/knob/theme.toml`
 (`knob -write-theme` drops a commented template). Removing knob leaves it in
 place; delete it with `rm -rf ~/.config/knob`.
-
-## Coming soon
-
-- **AUR** — `yay -S knob-bin` (blocked on AUR new-account registration reopening)
-- **Homebrew** — `brew install luis-codex/tap/knob`
-- **apt / dnf repos** — add one repo line, then `apt install knob` / `dnf install knob`

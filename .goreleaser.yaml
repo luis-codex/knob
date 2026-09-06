@@ -99,25 +99,3 @@ release:
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
-
-# --- Extra distribution (needs secrets; enable once they are ready) ---
-#
-# AUR: needs an SSH key pair and the AUR git repo.
-# aurs:
-#   - name: knob-bin
-#     homepage: https://github.com/luis-codex/knob
-#     description: System settings in a TUI.
-#     maintainers:
-#       - Luis Tenorio <luisprograming0@gmail.com>
-#     license: GPL-3.0-or-later
-#     private_key: "{{ .Env.AUR_KEY }}"
-#     git_url: ssh://aur@aur.archlinux.org/knob-bin.git
-#
-# Homebrew: needs a homebrew-tap repo and a token with write access.
-# brews:
-#   - repository:
-#       owner: luis-codex
-#       name: homebrew-tap
-#     homepage: https://github.com/luis-codex/knob
-#     description: System settings in a TUI.
-#     license: GPL-3.0-or-later
