@@ -49,6 +49,15 @@ func fit(s string, width int) string {
 	return lipgloss.NewStyle().MaxWidth(width).Render(s)
 }
 
+// pad right-fills s with spaces to width columns; it is fit's counterpart, for
+// short rows that must reach the edge so a trailing scrollbar lands there.
+func pad(s string, width int) string {
+	if gap := width - lipgloss.Width(s); gap > 0 {
+		return s + strings.Repeat(" ", gap)
+	}
+	return s
+}
+
 // --- text -----------------------------------------------------------------
 
 // plural formats a count with its noun.

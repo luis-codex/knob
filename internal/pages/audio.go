@@ -79,6 +79,11 @@ type Audio struct {
 	lists   map[section]*components.List
 	focused section
 
+	// bodyOffset is the first visible row of the stacked sections: the whole
+	// body scrolls as one, instead of each list windowing on its own. View
+	// updates it so the focused section's cursor stays in sight.
+	bodyOffset int
+
 	// changes reports external changes: volume keys, a graphical mixer,
 	// plugging in headphones.
 	changes <-chan struct{}
@@ -366,26 +371,48 @@ func (p *Audio) View(t styles.Theme, width, height int) string {
 		return ""
 	}
 
+	// One gutter on the right holds the body's single scrollbar; the sections
+	// lay out against what is left.
+	const scrollGutter = 2
+	content := max(inner-scrollGutter, 1)
+
 	tail := []string{}
 	if p.failure != "" {
 		tail = append(tail, "", t.Body.Danger.Render(fit(p.failure, inner)))
 	}
 	tail = append(tail, "", fit(p.hint(t), inner))
 
-	// The sections split the remaining height. The dividers go between them,
-	// so they are one row fewer than sections, plus their blank line.
-	dividers := (len(sections) - 1) * 2
-	available := height - frameChrome - len(tail) - len(sections)*audioui.Chrome - dividers
-	listHeight := max(1, available/len(sections))
-
-	rows := make([]string, 0, height)
+	// Every section renders in full; the page stacks them and scrolls the whole
+	// body as one, rather than each list windowing on its own.
+	body := make([]string, 0, 2*height)
+	cursorRow := 0
 	for i, s := range sections {
 		if i > 0 {
-			// Never after the last one: there the blank before the footer
-			// already separates it.
-			rows = append(rows, ui.HDivider(t, inner), "")
+			// A rule and its blank line separate one section from the next.
+			body = append(body, ui.HDivider(t, content), "")
 		}
-		rows = append(rows, p.section(t, s).Render(t, inner, listHeight)...)
+		if s == p.focused {
+			// +1 skips the heading, so the window follows the selected row.
+			cursorRow = len(body) + 1 + p.list(s).Cursor()
+		}
+		body = append(body, p.section(t, s).Render(t, content)...)
+	}
+	// Short rows (headings, blanks) must reach the gutter or the scrollbar
+	// would float mid-line next to them.
+	for i := range body {
+		body[i] = pad(body[i], content)
+	}
+
+	// The window is what is left under the frame once the tail is set aside;
+	// the tail stays pinned to the bottom.
+	viewport := max(height-frameChrome-len(tail), 1)
+	p.bodyOffset = ui.ScrollOffset(p.bodyOffset, cursorRow, len(body), viewport)
+	bar := ui.Scrollbar(t, len(body), p.bodyOffset, viewport)
+
+	end := min(p.bodyOffset+viewport, len(body))
+	rows := ui.JoinScrollbar(body[p.bodyOffset:end], bar)
+	for len(rows) < viewport {
+		rows = append(rows, "")
 	}
 	rows = append(rows, tail...)
 
