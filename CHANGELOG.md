@@ -19,6 +19,10 @@ may change between minor releases.
   `.rpm` / Arch packages), GitHub Actions for CI and releases.
 - Project docs: `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE`
   (GPL-3.0-or-later).
+- `install.sh` one-liner installer (`curl -fsSL …/install.sh | sh`) — detects
+  OS/arch, verifies the checksum, installs the latest release.
+- `INSTALL.md` with distro-package, tarball and from-source instructions; the
+  README's install section trimmed to point at it.
 
 ### Changed
 - Renamed the project and binary to **`knob`** (module `knob`, command `knob`,

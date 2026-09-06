@@ -24,40 +24,18 @@ iwd. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and
 
 ## Install
 
-### Prebuilt binary (recommended)
-
-Download the archive for your architecture from the
-[latest release](https://github.com/luis-codex/knob/releases/latest),
-then:
-
 ```sh
-tar -xzf knob_*_linux_amd64.tar.gz
-install -Dm755 knob ~/.local/bin/knob   # or /usr/local/bin with sudo
+curl -fsSL https://raw.githubusercontent.com/luis-codex/knob/main/install.sh | sh
 ```
 
-Native packages (`.deb`, `.rpm`, Arch `.pkg.tar.zst`) are attached to each
-release as well.
+Installs the latest release for your OS/arch after verifying its checksum.
 
-### From source
+Native packages (`.deb`, `.rpm`, Arch `.pkg.tar.zst`), tarballs, `KNOB_VERSION` /
+`BINDIR` overrides, and building from source: **[INSTALL.md](INSTALL.md)**.
 
-```sh
-git clone https://github.com/luis-codex/knob
-cd knob
-make install        # builds with version info and installs to $GOBIN or $GOPATH/bin
-```
-
-Make sure that directory is on your `PATH`.
-
-## Uninstall
-
-```sh
-make uninstall            # removes the binary from $GOBIN / $GOPATH/bin
-rm -rf ~/.config/knob     # optional: also remove your theme/config
-```
-
-If you installed a prebuilt binary manually, just delete it
-(`rm ~/.local/bin/knob`). Native packages uninstall with your package manager
-(`apt remove knob`, `pacman -R knob`, …).
+To remove: your package manager (`pacman -R knob`, `apt remove knob`, …), or
+`rm` the binary. The theme at `~/.config/knob/` is left in place — delete it
+with `rm -rf ~/.config/knob`.
 
 ## Usage
 

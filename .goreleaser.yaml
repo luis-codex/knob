@@ -39,6 +39,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - INSTALL.md
       - CHANGELOG.md
 
 checksum:
@@ -63,6 +64,8 @@ nfpms:
         dst: /usr/share/licenses/knob/LICENSE
       - src: README.md
         dst: /usr/share/doc/knob/README.md
+      - src: INSTALL.md
+        dst: /usr/share/doc/knob/INSTALL.md
 
 changelog:
   sort: asc
