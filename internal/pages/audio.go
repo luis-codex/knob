@@ -15,12 +15,8 @@ import (
 	audioui "knob/internal/ui/audio"
 )
 
-const (
-	// volumeStep is how much a left/right press moves.
-	volumeStep = 5
-	// blinkInterval is how often the dot of audible streams turns on and off.
-	blinkInterval = 600 * time.Millisecond
-)
+// blinkInterval is how often the dot of audible streams turns on and off.
+const blinkInterval = 600 * time.Millisecond
 
 // section tells the page's two lists apart. Focus is always on one of them.
 type section int
@@ -65,10 +61,14 @@ type (
 // section and focus on one of them.
 type Audio struct {
 	title string
-	svc   *sound.Service
+	uc    sound.UseCases
 	// ctx bounds the subscription to the application's lifetime. Without it
 	// the process listening to the sound server is orphaned on exit.
 	ctx context.Context
+
+	// step is how much a left/right press moves the volume, from the user's
+	// settings.
+	step int
 
 	outputs []audio.Device
 	inputs  []audio.Device
@@ -95,11 +95,12 @@ type Audio struct {
 	blinking bool
 }
 
-func NewAudio(ctx context.Context, title string, svc *sound.Service) *Audio {
+func NewAudio(ctx context.Context, title string, uc sound.UseCases, step int) *Audio {
 	return &Audio{
 		title: title,
-		svc:   svc,
+		uc:    uc,
 		ctx:   ctx,
+		step:  step,
 		lists: map[section]*components.List{
 			sectionOutputs: components.NewList(),
 			sectionInputs:  components.NewList(),
@@ -115,14 +116,14 @@ func (p *Audio) Init() tea.Cmd {
 
 // subscribe opens the listener, bounded to the application's context.
 func (p *Audio) subscribe() tea.Cmd {
-	svc, ctx := p.svc, p.ctx
+	uc, ctx := p.uc, p.ctx
 
 	return func() tea.Msg {
-		changes, err := svc.Changes(ctx)
+		watch, err := uc.WatchChanges.Execute(ctx, sound.WatchChangesCommand{})
 		if err != nil {
 			return audioFailedMsg{err: err}
 		}
-		return audioWatchingMsg{changes: changes}
+		return audioWatchingMsg{changes: watch.Changes}
 	}
 }
 
@@ -170,26 +171,26 @@ func (p *Audio) anyStreamAudible() bool {
 // --- commands -------------------------------------------------------------
 
 func (p *Audio) reload() tea.Cmd {
-	svc := p.svc
+	uc := p.uc
 
 	return func() tea.Msg {
 		ctx := context.Background()
 
-		outputs, err := svc.Outputs(ctx)
+		outputsRes, err := uc.ListOutputs.Execute(ctx, sound.ListOutputsCommand{})
 		if err != nil {
 			return audioFailedMsg{err: err}
 		}
 
-		inputs, err := svc.Inputs(ctx)
+		inputsRes, err := uc.ListInputs.Execute(ctx, sound.ListInputsCommand{})
 		if err != nil {
 			return audioFailedMsg{err: err}
 		}
 
-		streams, err := svc.Streams(ctx)
+		streamsRes, err := uc.ListStreams.Execute(ctx, sound.ListStreamsCommand{})
 		if err != nil {
 			return audioFailedMsg{err: err}
 		}
-		return audioLoadedMsg{outputs: outputs, inputs: inputs, streams: streams}
+		return audioLoadedMsg{outputs: outputsRes.Devices, inputs: inputsRes.Devices, streams: streamsRes.Streams}
 	}
 }
 
@@ -282,9 +283,9 @@ func (p *Audio) HandleKey(msg tea.KeyPressMsg) (bool, tea.Cmd) {
 	case "shift+tab":
 		p.jumpSection(-1)
 	case "left", "h":
-		return true, p.adjust(-volumeStep)
+		return true, p.adjust(-p.step)
 	case "right", "l":
-		return true, p.adjust(volumeStep)
+		return true, p.adjust(p.step)
 	case "m":
 		return true, p.toggleMute()
 	case "enter":
@@ -362,9 +363,9 @@ func (p *Audio) adjust(delta int) tea.Cmd {
 		if !ok {
 			return nil
 		}
-		svc, index := p.svc, st.ID().Index()
+		uc, index := p.uc, st.ID().Index()
 		return audioMutate(func(ctx context.Context) error {
-			_, err := svc.AdjustStreamVolume(ctx, index, delta)
+			_, err := uc.AdjustStreamVolume.Execute(ctx, sound.AdjustStreamVolumeCommand{Index: index, Delta: delta})
 			return err
 		})
 	}
@@ -374,9 +375,9 @@ func (p *Audio) adjust(delta int) tea.Cmd {
 		return nil
 	}
 
-	svc, id := p.svc, d.ID().String()
+	uc, id := p.uc, d.ID().String()
 	return audioMutate(func(ctx context.Context) error {
-		_, err := svc.AdjustVolume(ctx, id, delta)
+		_, err := uc.AdjustVolume.Execute(ctx, sound.AdjustVolumeCommand{ID: id, Delta: delta})
 		return err
 	})
 }
@@ -387,9 +388,9 @@ func (p *Audio) toggleMute() tea.Cmd {
 		if !ok {
 			return nil
 		}
-		svc, index := p.svc, st.ID().Index()
+		uc, index := p.uc, st.ID().Index()
 		return audioMutate(func(ctx context.Context) error {
-			_, err := svc.ToggleStreamMuted(ctx, index)
+			_, err := uc.ToggleStreamMuted.Execute(ctx, sound.ToggleStreamMutedCommand{Index: index})
 			return err
 		})
 	}
@@ -399,9 +400,9 @@ func (p *Audio) toggleMute() tea.Cmd {
 		return nil
 	}
 
-	svc, id := p.svc, d.ID().String()
+	uc, id := p.uc, d.ID().String()
 	return audioMutate(func(ctx context.Context) error {
-		_, err := svc.ToggleMuted(ctx, id)
+		_, err := uc.ToggleMuted.Execute(ctx, sound.ToggleMutedCommand{ID: id})
 		return err
 	})
 }
@@ -417,9 +418,9 @@ func (p *Audio) makeDefault() tea.Cmd {
 		return nil
 	}
 
-	svc, id := p.svc, d.ID().String()
+	uc, id := p.uc, d.ID().String()
 	return audioMutate(func(ctx context.Context) error {
-		_, err := svc.MakeDefault(ctx, id)
+		_, err := uc.MakeDefault.Execute(ctx, sound.MakeDefaultCommand{ID: id})
 		return err
 	})
 }

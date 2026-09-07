@@ -1,12 +1,3 @@
-// Package config reads the user's configuration and translates it to the
-// interface's vocabulary.
-//
-// It does not live under infrastructure because it implements no domain port:
-// it does not translate inward, but toward presentation. It is a helper for
-// the composition root, which is its only client.
-//
-// The styles package stays as pure tokens and receives the colors already
-// resolved: reading the disk is this package's job.
 package config
 
 import (
@@ -22,13 +13,6 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"knob/internal/shared/styles"
-)
-
-const (
-	// appDir is the folder under the user's config directory.
-	appDir = "knob"
-	// themeFile is the theme file inside that folder.
-	themeFile = "theme.toml"
 )
 
 // hexPattern accepts #RGB and #RRGGBB, which is what lipgloss understands.
@@ -54,15 +38,6 @@ type palette struct {
 type file struct {
 	Light palette `toml:"light"`
 	Dark  palette `toml:"dark"`
-}
-
-// ThemePath is where the file is looked for. It respects XDG_CONFIG_HOME.
-func ThemePath() (string, error) {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(dir, appDir, themeFile), nil
 }
 
 // LoadTheme reads the user's theme.

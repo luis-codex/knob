@@ -41,11 +41,16 @@ Hexagonal / ports-and-adapters, one direction of dependency:
 internal/
   domain/          entities and invariants; ports (interfaces). No I/O.
   application/     use cases; orchestrate the domain through the ports.
-  infrastructure/  adapters that implement the ports (bluez, pulse, memory, simulated).
-  config/          reads user config and translates it to UI vocabulary.
+  infrastructure/  everything that does I/O: port adapters (bluez, pulse,
+                   memory, simulated) and the config reader (config/).
   app/, pages/, shared/, ui/   the Bubble Tea model, screens and widgets.
 cmd/knob/      composition root: wires concrete adapters to use cases.
 ```
+
+A use case is one `Execute`-only type per action, with its own `Command` and
+`Response`, grouped per aggregate under `application/<aggregate>/` and wired
+into that aggregate's `UseCases` bundle. Shared plumbing (`apply`,
+`requireAdapter`, …) stays unexported on `Deps`.
 
 The `cmd/knob/main.go` composition root is the only place that names
 concrete implementations. Swapping a backend is changing those lines.

@@ -67,6 +67,20 @@ template with every color and its default; uncomment only what you want to
 change. An invalid theme never blocks startup — bad values are reported on
 stderr and the defaults are used.
 
+Behavioural settings live in `$XDG_CONFIG_HOME/knob/config.toml`, all optional:
+
+```toml
+[audio]
+volume_step = 5      # how much a left/right press moves the volume (1–50)
+
+[bluetooth]
+scan_seconds = 8     # how long a device scan lasts (1–60)
+```
+
+Same rule as the theme: a missing file is a normal first run, a malformed file
+falls back to the defaults, and an out-of-range value keeps that field's
+default. Anything wrong is reported on stderr, naming the key.
+
 ### Exit codes
 
 | Code | Meaning |

@@ -43,7 +43,7 @@ type (
 // Bluetooth manages the paired devices.
 type Bluetooth struct {
 	title string
-	svc   *devices.Service
+	uc    devices.UseCases
 
 	items   []bluetooth.Device
 	adapter bluetooth.Adapter
@@ -65,8 +65,8 @@ type Bluetooth struct {
 	failure  string
 }
 
-func NewBluetooth(title string, svc *devices.Service) *Bluetooth {
-	return &Bluetooth{title: title, svc: svc, list: components.NewList(), lastScan: -1}
+func NewBluetooth(title string, uc devices.UseCases) *Bluetooth {
+	return &Bluetooth{title: title, uc: uc, list: components.NewList(), lastScan: -1}
 }
 
 func (p *Bluetooth) Init() tea.Cmd { return p.reload() }
@@ -74,47 +74,47 @@ func (p *Bluetooth) Init() tea.Cmd { return p.reload() }
 // --- commands -------------------------------------------------------------
 
 func (p *Bluetooth) reload() tea.Cmd {
-	svc, query := p.svc, p.search.Trimmed()
+	uc, query := p.uc, p.search.Trimmed()
 
 	return func() tea.Msg {
 		ctx := context.Background()
 
-		adapter, err := svc.Adapter(ctx)
+		adapterRes, err := uc.GetAdapter.Execute(ctx, devices.GetAdapterCommand{})
 		if err != nil {
 			return devicesFailedMsg{err: err}
 		}
 
-		items, err := svc.Search(ctx, query)
+		devicesRes, err := uc.SearchDevices.Execute(ctx, devices.SearchDevicesCommand{Query: query})
 		if err != nil {
 			return devicesFailedMsg{err: err}
 		}
-		return devicesLoadedMsg{items: items, adapter: adapter}
+		return devicesLoadedMsg{items: devicesRes.Devices, adapter: adapterRes.Adapter}
 	}
 }
 
 // scan looks for nearby devices.
 func (p *Bluetooth) scan() tea.Cmd {
-	svc := p.svc
+	uc := p.uc
 
 	return func() tea.Msg {
-		added, err := svc.Scan(context.Background())
+		found, err := uc.ScanDevices.Execute(context.Background(), devices.ScanDevicesCommand{})
 		if err != nil {
 			return devicesFailedMsg{err: err}
 		}
-		return scanFinishedMsg{added: len(added)}
+		return scanFinishedMsg{added: len(found.Devices)}
 	}
 }
 
 // toggleAdapter turns the radio on or off depending on its current state.
 func (p *Bluetooth) toggleAdapter() tea.Cmd {
-	svc, enabled := p.svc, p.adapter.Enabled()
+	uc, enabled := p.uc, p.adapter.Enabled()
 
 	return deviceMutate(func(ctx context.Context) error {
 		var err error
 		if enabled {
-			_, err = svc.DisableAdapter(ctx)
+			_, err = uc.DisableAdapter.Execute(ctx, devices.DisableAdapterCommand{})
 		} else {
-			_, err = svc.EnableAdapter(ctx)
+			_, err = uc.EnableAdapter.Execute(ctx, devices.EnableAdapterCommand{})
 		}
 		return err
 	})
@@ -135,17 +135,17 @@ func deviceMutate(op func(context.Context) error) tea.Cmd {
 // advance runs the natural action for the current state: pair what is
 // discovered, connect what is paired and disconnect what is connected.
 func (p *Bluetooth) advance(d bluetooth.Device) tea.Cmd {
-	svc, addr := p.svc, d.Address().String()
+	uc, addr := p.uc, d.Address().String()
 
 	return deviceMutate(func(ctx context.Context) error {
 		var err error
 		switch d.State() {
 		case bluetooth.StateDiscovered:
-			_, err = svc.Pair(ctx, addr)
+			_, err = uc.PairDevice.Execute(ctx, devices.PairDeviceCommand{Address: addr})
 		case bluetooth.StatePaired:
-			_, err = svc.Connect(ctx, addr)
+			_, err = uc.ConnectDevice.Execute(ctx, devices.ConnectDeviceCommand{Address: addr})
 		case bluetooth.StateConnected:
-			_, err = svc.Disconnect(ctx, addr)
+			_, err = uc.DisconnectDevice.Execute(ctx, devices.DisconnectDeviceCommand{Address: addr})
 		}
 		return err
 	})
@@ -189,17 +189,18 @@ func (p *Bluetooth) resolve(action components.DialogAction) tea.Cmd {
 		return nil
 	}
 
-	svc, addr, value := p.svc, p.pendingAddr, p.dialog.Value()
+	uc, addr, value := p.uc, p.pendingAddr, p.dialog.Value()
 
 	switch p.pending {
 	case devicePendingRename:
 		return deviceMutate(func(ctx context.Context) error {
-			_, err := svc.Rename(ctx, addr, value)
+			_, err := uc.RenameDevice.Execute(ctx, devices.RenameDeviceCommand{Address: addr, Name: value})
 			return err
 		})
 	case devicePendingRemove:
 		return deviceMutate(func(ctx context.Context) error {
-			return svc.Remove(ctx, addr)
+			_, err := uc.RemoveDevice.Execute(ctx, devices.RemoveDeviceCommand{Address: addr})
+			return err
 		})
 	}
 	return nil
@@ -289,9 +290,9 @@ func (p *Bluetooth) handleBrowseKey(key string) (bool, tea.Cmd) {
 		}
 	case "u":
 		if d, ok := p.selected(); ok && d.State().IsPaired() {
-			svc, addr := p.svc, d.Address().String()
+			uc, addr := p.uc, d.Address().String()
 			return true, deviceMutate(func(ctx context.Context) error {
-				_, err := svc.Unpair(ctx, addr)
+				_, err := uc.UnpairDevice.Execute(ctx, devices.UnpairDeviceCommand{Address: addr})
 				return err
 			})
 		}

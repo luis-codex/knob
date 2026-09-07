@@ -17,16 +17,13 @@ import (
 	"knob/internal/app"
 	"knob/internal/application/devices"
 	"knob/internal/application/sound"
-	"knob/internal/config"
 	"knob/internal/domain/bluetooth"
 	"knob/internal/infrastructure/bluez"
+	"knob/internal/infrastructure/config"
 	"knob/internal/infrastructure/memory"
 	"knob/internal/infrastructure/pulse"
 	simulatedbt "knob/internal/infrastructure/simulated"
 )
-
-// scanWindow is how long a device discovery lasts.
-const scanWindow = 8 * time.Second
 
 // Exit codes. A script wrapping knob can branch on them; they are
 // documented in the README.
@@ -81,10 +78,30 @@ func main() {
 		fmt.Fprintln(os.Stderr, "theme:", err)
 	}
 
-	deviceSvc := devices.NewService(bluetoothPorts(*simulated))
-	soundSvc := sound.NewService(pulse.NewRepository(), pulse.NewStreamRepository(), pulse.NewWatcher())
+	// Same rule for the behavioural settings: a bad value is reported and its
+	// field stays at the default.
+	settings, settingsErrs := config.LoadSettings()
+	for _, err := range settingsErrs {
+		fmt.Fprintln(os.Stderr, "config:", err)
+	}
 
-	if _, err := tea.NewProgram(app.New(ctx, theme, deviceSvc, soundSvc)).Run(); err != nil {
+	btDevices, btAdapters, btScanner := bluetoothPorts(*simulated, settings.ScanDuration)
+	if *simulated {
+		// The fake backend starts empty; load the example devices so the
+		// Bluetooth screen shows something without hardware.
+		if err := memory.SeedDevices(ctx, btDevices); err != nil {
+			fmt.Fprintln(os.Stderr, "seed:", err)
+		}
+	}
+
+	deviceUC := devices.NewUseCases(devices.Deps{Repo: btDevices, Adapters: btAdapters, Scanner: btScanner})
+	soundUC := sound.NewUseCases(sound.Deps{
+		Repo:    pulse.NewRepository(),
+		Streams: pulse.NewStreamRepository(),
+		Watcher: pulse.NewWatcher(),
+	})
+
+	if _, err := tea.NewProgram(app.New(ctx, theme, deviceUC, soundUC, settings.VolumeStep)).Run(); err != nil {
 		// The most common startup failure is having no interactive terminal
 		// (a pipe, CI, cron). Explain it instead of dumping the raw library
 		// error.
@@ -128,54 +145,17 @@ Flags:
 	flag.PrintDefaults()
 }
 
-// bluetoothPorts returns the three Bluetooth ports.
+// bluetoothPorts returns the three Bluetooth ports. scan is the discovery
+// window, from the user's settings.
 //
 // By default they are the system ones: a settings tool must show what is
 // really there. The fake ones sit behind a flag, for developing without
-// hardware.
-func bluetoothPorts(fake bool) (bluetooth.Repository, bluetooth.AdapterRepository, bluetooth.Scanner) {
+// hardware; main seeds them with memory.SeedDevices.
+func bluetoothPorts(fake bool, scan time.Duration) (bluetooth.Repository, bluetooth.AdapterRepository, bluetooth.Scanner) {
 	if !fake {
-		return bluez.NewRepository(), bluez.NewAdapterRepository(), bluez.NewScanner(scanWindow)
+		return bluez.NewRepository(), bluez.NewAdapterRepository(), bluez.NewScanner(scan)
 	}
-
-	repo := memory.NewDeviceRepository()
-	seedDevices(context.Background(), repo)
-	return repo, memory.NewAdapterRepository(true), simulatedbt.NewScanner(scanWindow)
-}
-
-// seedDevices loads example devices into the simulated backend. They are built
-// through the service so they go through the same validations.
-func seedDevices(ctx context.Context, repo bluetooth.Repository) {
-	svc := devices.NewService(repo, memory.NewAdapterRepository(true), simulatedbt.NewScanner(0))
-
-	seed := []struct {
-		address, name, kind string
-		pair, connect       bool
-		battery             int
-	}{
-		{"AA:BB:CC:DD:EE:FF", "WH-1000XM4", "headphones", true, true, 82},
-		{"11:22:33:44:55:66", "MX Master 3S", "mouse", true, true, 45},
-		{"77:88:99:AA:BB:CC", "Keyboard K380", "keyboard", true, false, 0},
-	}
-
-	for _, d := range seed {
-		report(svc.Discover(ctx, d.address, d.name, d.kind))
-		if d.pair {
-			report(svc.Pair(ctx, d.address))
-		}
-		if d.connect {
-			report(svc.Connect(ctx, d.address))
-			report(svc.ReportBattery(ctx, d.address, d.battery))
-		}
-	}
-}
-
-// report drops the value and reports the error: a seeding failure must not
-// stop startup, but it must not go unnoticed either.
-func report[T any](_ T, err error) {
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "seed:", err)
-	}
+	return memory.NewDeviceRepository(), memory.NewAdapterRepository(true), simulatedbt.NewScanner(scan)
 }
 
 // writeExampleTheme leaves the theme template in place and reports where.

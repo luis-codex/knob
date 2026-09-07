@@ -10,6 +10,10 @@ may change between minor releases.
 ## [Unreleased]
 
 ### Added
+- Behavioural settings in `$XDG_CONFIG_HOME/knob/config.toml`: `[audio]
+  volume_step` and `[bluetooth] scan_seconds`, both optional and range-checked.
+  A missing file or a bad value never blocks startup; the file is read at the
+  same point, and with the same tolerate-and-report rule, as the theme.
 - `--version` flag: prints version, commit and build date (injected at build
   time via `-ldflags`).
 - Descriptive `--help` output with a summary, examples and the issues link.

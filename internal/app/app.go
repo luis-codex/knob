@@ -66,14 +66,15 @@ type Model struct {
 }
 
 // New takes the wiring already done: the context that bounds the processes
-// listening to the system, the user's palette and the use cases. All of that
-// is decided by the composition root, not the interface.
-func New(ctx context.Context, custom styles.Custom, deviceSvc *devices.Service, soundSvc *sound.Service) Model {
+// listening to the system, the user's palette, the use cases and the
+// preferences read from config.toml. All of that is decided by the composition
+// root, not the interface.
+func New(ctx context.Context, custom styles.Custom, deviceUC devices.UseCases, soundUC sound.UseCases, volumeStep int) Model {
 	return Model{
 		palette:  custom,
 		theme:    styles.NewWithPalette(true, custom.For(true)), // provisional until the BackgroundColorMsg
 		nav:      components.NewNav(navGroups()...),
-		router:   newRouter(ctx, deviceSvc, soundSvc),
+		router:   newRouter(ctx, deviceUC, soundUC, volumeStep),
 		fallback: pages.NewFallback("Settings"),
 	}
 }

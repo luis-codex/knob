@@ -36,10 +36,10 @@ func navGroups() []components.NavGroup {
 
 // newRouter builds the pages once, so they keep their state when navigating
 // away and back.
-func newRouter(ctx context.Context, deviceSvc *devices.Service, soundSvc *sound.Service) map[string]layouts.Section {
+func newRouter(ctx context.Context, deviceUC devices.UseCases, soundUC sound.UseCases, volumeStep int) map[string]layouts.Section {
 	return map[string]layouts.Section{
-		navSound:     pages.NewAudio(ctx, "Audio & mic", soundSvc),
+		navSound:     pages.NewAudio(ctx, "Audio & mic", soundUC, volumeStep),
 		navWiFi:      pages.NewWiFi("Wifi & Network"),
-		navBluetooth: pages.NewBluetooth("Bluetooth", deviceSvc),
+		navBluetooth: pages.NewBluetooth("Bluetooth", deviceUC),
 	}
 }
