@@ -1,11 +1,11 @@
 # knob
 
-System settings — audio, Bluetooth, network — in a terminal UI.
+System settings — audio, network — in a terminal UI.
 
 `knob` is a keyboard-driven TUI for Linux that shows and changes what your
 system is actually doing: output/input volume and devices via PulseAudio /
-PipeWire, Bluetooth devices via BlueZ, and (soon) network via NetworkManager or
-iwd. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and
+PipeWire, and (soon) network via NetworkManager or iwd. Built with
+[Bubble Tea](https://github.com/charmbracelet/bubbletea) and
 [Lip Gloss](https://github.com/charmbracelet/lipgloss).
 
 > **Status: beta.** It works day to day, but interfaces are not frozen yet — see
@@ -18,7 +18,6 @@ iwd. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and
 - Linux with an interactive terminal (true-color recommended; it degrades on
   poorer terminals).
 - **Audio:** a running PulseAudio or PipeWire (`pipewire-pulse`) session.
-- **Bluetooth:** BlueZ (`bluetoothd`) reachable on the session/system D-Bus.
 - No root required — it uses your session buses only.
 - To build from source: Go 1.27 or newer.
 
@@ -34,15 +33,13 @@ Native packages (`.deb`, `.rpm`, Arch `.pkg.tar.zst`), tarballs, `KNOB_VERSION` 
 `BINDIR` overrides, and building from source: **[INSTALL.md](INSTALL.md)**.
 
 To remove: your package manager (`pacman -R knob`, `apt remove knob`, …), or
-`rm` the binary. The theme at `~/.config/knob/` is left in place — delete it
+`rm` the binary. The config at `~/.config/knob/` is left in place — delete it
 with `rm -rf ~/.config/knob`.
 
 ## Usage
 
 ```
 knob              open the settings
-knob -write-theme  drop an example theme in ~/.config/knob/
-knob -fake-bluetooth  use fake devices (development, no hardware needed)
 knob -version     print version, commit and build date
 knob -h           full help
 ```
@@ -54,6 +51,7 @@ knob -h           full help
 | `↑`/`↓` or `k`/`j` | move within a list |
 | `→`/`l` or `Enter`/`Tab` | enter a section |
 | `←`/`h` or `Esc` | back to the menu |
+| `Ctrl-B` | hide or show the sidebar |
 | `q` | quit |
 | `Ctrl-C` | quit immediately (always) |
 
@@ -61,11 +59,40 @@ Each screen shows its own extra keys in the footer.
 
 ### Configuration
 
-`knob` reads an optional theme from `$XDG_CONFIG_HOME/knob/theme.toml` (usually
-`~/.config/knob/theme.toml`). Run `knob -write-theme` to drop a commented
-template with every color and its default; uncomment only what you want to
-change. An invalid theme never blocks startup — bad values are reported on
-stderr and the defaults are used.
+`knob` keeps every preference — audio, theme and interface — in one file,
+`$XDG_CONFIG_HOME/knob/config.toml` (usually `~/.config/knob/config.toml`).
+knob owns it: it is created with every key at its default on first run, and
+edited from the Preferences screen in the TUI, which saves immediately.
+
+```toml
+[audio]
+volume_step = 5        # how much a left/right press moves the volume (1–50)
+
+[theme]
+mode = "auto"           # auto | light | dark
+
+[theme.dark]
+accent = "#516BEB"      # every color role, per variant; unset means "use the default"
+# ...
+
+[theme.light]
+# ...
+
+[interface]
+sidebar_hidden = false  # start with the sidebar collapsed
+animations     = true   # the playing-stream blink, and anything added later
+```
+
+You can still hand-edit it: a missing key keeps its default, an out-of-range
+or malformed value falls back to its default and is reported on stderr naming
+the key, and a whole-file syntax error is reported and knob starts on the
+defaults. The one thing hand-editing does not survive is comments, or a
+rejected value itself — knob rewrites the file on every change made from the
+TUI, so annotations and typoed values you haven't fixed yet are both lost at
+the next save.
+
+> Older versions kept the theme in a separate, read-only `theme.toml`. Delete
+> it after upgrading; knob no longer reads it.
 
 ### Exit codes
 
@@ -79,13 +106,10 @@ stderr and the defaults are used.
 
 ## Known limitations
 
-- **Bluetooth:** listing, pairing state and connect/disconnect work; accepting
-  an *incoming* pairing request is not implemented yet.
 - **Network / Wi-Fi:** the screen is a placeholder — it does not manage networks
   yet (needs a NetworkManager or iwd adapter). It is hidden from the menu for
   now.
-- Only tested against PulseAudio / PipeWire and BlueZ on `x86_64` Arch Linux so
-  far.
+- Only tested against PulseAudio / PipeWire on `x86_64` Arch Linux so far.
 
 ## Compatibility
 

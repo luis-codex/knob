@@ -45,11 +45,6 @@ install:
 	$(BUILD_ENV) $(GO) install $(BUILD_FLAGS) $(CMD)
 	@echo "-> $(GOBIN_DIR)/$(BINARY) ($(VERSION))"
 
-## theme: write an example theme to the user's config directory
-.PHONY: theme
-theme:
-	$(GO) run $(CMD) -write-theme
-
 ## uninstall: remove knob from the PATH (config in ~/.config/knob/ is left alone)
 .PHONY: uninstall
 uninstall:

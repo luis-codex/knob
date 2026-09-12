@@ -32,6 +32,17 @@ func (l *List) Prev() {
 	l.clampCursor()
 }
 
+// ToFirst parks the cursor on the first row. Used when focus enters the list
+// from above.
+func (l *List) ToFirst() { l.cursor = 0 }
+
+// ToLast parks the cursor on the last row, per the current count. Used when
+// focus enters the list from below.
+func (l *List) ToLast() {
+	l.cursor = l.count - 1
+	l.clampCursor()
+}
+
 // SetCount re-adjusts the cursor after the data changes. Mandatory when
 // filtering or deleting, or the cursor points to an index that no longer
 // exists.
@@ -79,17 +90,39 @@ func (l *List) Render(t styles.Theme, count, width, height int, showCursor bool,
 	const scrollbarColumns = 2
 	itemWidth := width - scrollbarColumns
 
-	const prefixWidth = 2
-
 	end := min(l.offset+height, count)
 	out := make([]string, 0, end-l.offset)
 	for i := l.offset; i < end; i++ {
-		base, prefix := t.List.Item, "  "
-		if i == l.cursor && showCursor {
-			base, prefix = t.List.Selected, t.Icon.Cursor+" "
-		}
-		out = append(out, base.Render(prefix)+row(i, base, itemWidth-prefixWidth))
+		out = append(out, l.renderRow(t, i, itemWidth, showCursor, row))
 	}
 
 	return ui.JoinScrollbar(out, bar)
+}
+
+// RenderFull returns every row, with the cursor highlight but no window and no
+// scrollbar of its own: the caller stacks several lists and scrolls the whole
+// thing as one. width is the exact room for each row, with any scrollbar gutter
+// already subtracted by the caller.
+func (l *List) RenderFull(t styles.Theme, count, width int, showCursor bool, row RowFunc) []string {
+	l.SetCount(count)
+	if count == 0 || width <= 0 {
+		return nil
+	}
+
+	out := make([]string, 0, count)
+	for i := range count {
+		out = append(out, l.renderRow(t, i, width, showCursor, row))
+	}
+	return out
+}
+
+// renderRow formats row i with the cursor style resolved and the width its
+// content must occupy.
+func (l *List) renderRow(t styles.Theme, i, width int, showCursor bool, row RowFunc) string {
+	base, prefix := t.List.Item, "  "
+	if i == l.cursor && showCursor {
+		base, prefix = t.List.Selected, t.Icon.Cursor+" "
+	}
+	const prefixWidth = 2
+	return base.Render(prefix) + row(i, base, width-prefixWidth)
 }

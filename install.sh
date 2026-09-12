@@ -35,7 +35,7 @@ fi
 
 os=$(uname -s | tr '[:upper:]' '[:lower:]')
 if [ "$os" != "linux" ]; then
-	err "no $os build — knob is Linux-only (it talks to bluez and PulseAudio/PipeWire). Build from source: https://github.com/$REPO#from-source"
+	err "no $os build — knob is Linux-only (it talks to PulseAudio/PipeWire). Build from source: https://github.com/$REPO#from-source"
 fi
 
 arch=$(uname -m)

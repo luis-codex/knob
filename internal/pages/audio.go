@@ -15,12 +15,8 @@ import (
 	audioui "knob/internal/ui/audio"
 )
 
-const (
-	// volumeStep is how much a left/right press moves.
-	volumeStep = 5
-	// blinkInterval is how often the dot of audible streams turns on and off.
-	blinkInterval = 600 * time.Millisecond
-)
+// blinkInterval is how often the dot of audible streams turns on and off.
+const blinkInterval = 600 * time.Millisecond
 
 // section tells the page's two lists apart. Focus is always on one of them.
 type section int
@@ -65,10 +61,16 @@ type (
 // section and focus on one of them.
 type Audio struct {
 	title string
-	svc   *sound.Service
+	uc    sound.UseCases
 	// ctx bounds the subscription to the application's lifetime. Without it
 	// the process listening to the sound server is orphaned on exit.
 	ctx context.Context
+
+	// step is how much a left/right press moves the volume, from the user's
+	// settings.
+	step int
+	// animate gates the playing-stream blink; off means it never arms.
+	animate bool
 
 	outputs []audio.Device
 	inputs  []audio.Device
@@ -78,6 +80,11 @@ type Audio struct {
 	// does not lose where you were.
 	lists   map[section]*components.List
 	focused section
+
+	// bodyOffset is the first visible row of the stacked sections: the whole
+	// body scrolls as one, instead of each list windowing on its own. View
+	// updates it so the focused section's cursor stays in sight.
+	bodyOffset int
 
 	// changes reports external changes: volume keys, a graphical mixer,
 	// plugging in headphones.
@@ -90,11 +97,13 @@ type Audio struct {
 	blinking bool
 }
 
-func NewAudio(ctx context.Context, title string, svc *sound.Service) *Audio {
+func NewAudio(ctx context.Context, title string, uc sound.UseCases, step int, animate bool) *Audio {
 	return &Audio{
-		title: title,
-		svc:   svc,
-		ctx:   ctx,
+		title:   title,
+		uc:      uc,
+		ctx:     ctx,
+		step:    step,
+		animate: animate,
 		lists: map[section]*components.List{
 			sectionOutputs: components.NewList(),
 			sectionInputs:  components.NewList(),
@@ -110,14 +119,14 @@ func (p *Audio) Init() tea.Cmd {
 
 // subscribe opens the listener, bounded to the application's context.
 func (p *Audio) subscribe() tea.Cmd {
-	svc, ctx := p.svc, p.ctx
+	uc, ctx := p.uc, p.ctx
 
 	return func() tea.Msg {
-		changes, err := svc.Changes(ctx)
+		watch, err := uc.WatchChanges.Execute(ctx, sound.WatchChangesCommand{})
 		if err != nil {
 			return audioFailedMsg{err: err}
 		}
-		return audioWatchingMsg{changes: changes}
+		return audioWatchingMsg{changes: watch.Changes}
 	}
 }
 
@@ -144,7 +153,7 @@ func blinkTick() tea.Cmd {
 // ensureBlink starts the blink if some stream is playing and it is not already
 // running. Without the guard, each reload would chain one more timer.
 func (p *Audio) ensureBlink() tea.Cmd {
-	if p.blinking || !p.anyStreamAudible() {
+	if !p.animate || p.blinking || !p.anyStreamAudible() {
 		return nil
 	}
 	p.blinking, p.blinkOn = true, true
@@ -165,26 +174,26 @@ func (p *Audio) anyStreamAudible() bool {
 // --- commands -------------------------------------------------------------
 
 func (p *Audio) reload() tea.Cmd {
-	svc := p.svc
+	uc := p.uc
 
 	return func() tea.Msg {
 		ctx := context.Background()
 
-		outputs, err := svc.Outputs(ctx)
+		outputsRes, err := uc.ListOutputs.Execute(ctx, sound.ListOutputsCommand{})
 		if err != nil {
 			return audioFailedMsg{err: err}
 		}
 
-		inputs, err := svc.Inputs(ctx)
+		inputsRes, err := uc.ListInputs.Execute(ctx, sound.ListInputsCommand{})
 		if err != nil {
 			return audioFailedMsg{err: err}
 		}
 
-		streams, err := svc.Streams(ctx)
+		streamsRes, err := uc.ListStreams.Execute(ctx, sound.ListStreamsCommand{})
 		if err != nil {
 			return audioFailedMsg{err: err}
 		}
-		return audioLoadedMsg{outputs: outputs, inputs: inputs, streams: streams}
+		return audioLoadedMsg{outputs: outputsRes.Devices, inputs: inputsRes.Devices, streams: streamsRes.Streams}
 	}
 }
 
@@ -260,6 +269,15 @@ func (p *Audio) HandleMsg(msg tea.Msg) tea.Cmd {
 
 	case audioFailedMsg:
 		p.failure = msg.err.Error()
+
+	case PreferencesSavedMsg:
+		p.step = msg.Settings.Audio.VolumeStep.Value()
+		p.animate = msg.Settings.Interface.Animations
+		if !p.animate {
+			p.blinking, p.blinkOn = false, false
+			return nil
+		}
+		return p.ensureBlink()
 	}
 	return nil
 }
@@ -269,17 +287,17 @@ func (p *Audio) HandleMsg(msg tea.Msg) tea.Cmd {
 func (p *Audio) HandleKey(msg tea.KeyPressMsg) (bool, tea.Cmd) {
 	switch msg.String() {
 	case "up", "k":
-		p.list(p.focused).Prev()
+		p.moveCursor(-1)
 	case "down", "j":
-		p.list(p.focused).Next()
+		p.moveCursor(+1)
 	case "tab":
-		p.focused = (p.focused + 1) % section(len(sections))
+		p.jumpSection(+1)
 	case "shift+tab":
-		p.focused = (p.focused - 1 + section(len(sections))) % section(len(sections))
+		p.jumpSection(-1)
 	case "left", "h":
-		return true, p.adjust(-volumeStep)
+		return true, p.adjust(-p.step)
 	case "right", "l":
-		return true, p.adjust(volumeStep)
+		return true, p.adjust(p.step)
 	case "m":
 		return true, p.toggleMute()
 	case "enter":
@@ -290,15 +308,76 @@ func (p *Audio) HandleKey(msg tea.KeyPressMsg) (bool, tea.Cmd) {
 	return true, nil
 }
 
+// items is how many rows section s shows: devices, or streams for the mixer.
+func (p *Audio) items(s section) int {
+	if s == sectionStreams {
+		return len(p.streams)
+	}
+	return len(p.devices(s))
+}
+
+// moveCursor steps the cursor one row (dir -1 up, +1 down) inside the focused
+// section. When it runs off either end it hands focus to the neighbouring
+// non-empty section, landing on the near edge so the body reads as one
+// continuous list. At the very top and bottom it does nothing.
+func (p *Audio) moveCursor(dir int) {
+	l := p.list(p.focused)
+	if next := l.Cursor() + dir; next >= 0 && next < p.items(p.focused) {
+		if dir < 0 {
+			l.Prev()
+		} else {
+			l.Next()
+		}
+		return
+	}
+
+	dst, ok := p.adjacentSection(p.focused, dir)
+	if !ok {
+		return
+	}
+	p.focused = dst
+	if dir < 0 {
+		p.list(dst).ToLast()
+	} else {
+		p.list(dst).ToFirst()
+	}
+}
+
+// adjacentSection is the closest non-empty section from s in direction dir. It
+// does not wrap: !ok means s is already the last non-empty section that way, so
+// the caller leaves the cursor put.
+func (p *Audio) adjacentSection(s section, dir int) (section, bool) {
+	for i := int(s) + dir; i >= 0 && i < len(sections); i += dir {
+		if p.items(sections[i]) > 0 {
+			return sections[i], true
+		}
+	}
+	return 0, false
+}
+
+// jumpSection is tab's fast move: straight to the next non-empty section in
+// dir, wrapping around, keeping each section's own cursor. With every other
+// section empty it stays put.
+func (p *Audio) jumpSection(dir int) {
+	n := len(sections)
+	for step := 1; step < n; step++ {
+		i := ((int(p.focused)+dir*step)%n + n) % n
+		if p.items(sections[i]) > 0 {
+			p.focused = sections[i]
+			return
+		}
+	}
+}
+
 func (p *Audio) adjust(delta int) tea.Cmd {
 	if p.focused == sectionStreams {
 		st, ok := p.selectedStream()
 		if !ok {
 			return nil
 		}
-		svc, index := p.svc, st.ID().Index()
+		uc, index := p.uc, st.ID().Index()
 		return audioMutate(func(ctx context.Context) error {
-			_, err := svc.AdjustStreamVolume(ctx, index, delta)
+			_, err := uc.AdjustStreamVolume.Execute(ctx, sound.AdjustStreamVolumeCommand{Index: index, Delta: delta})
 			return err
 		})
 	}
@@ -308,9 +387,9 @@ func (p *Audio) adjust(delta int) tea.Cmd {
 		return nil
 	}
 
-	svc, id := p.svc, d.ID().String()
+	uc, id := p.uc, d.ID().String()
 	return audioMutate(func(ctx context.Context) error {
-		_, err := svc.AdjustVolume(ctx, id, delta)
+		_, err := uc.AdjustVolume.Execute(ctx, sound.AdjustVolumeCommand{ID: id, Delta: delta})
 		return err
 	})
 }
@@ -321,9 +400,9 @@ func (p *Audio) toggleMute() tea.Cmd {
 		if !ok {
 			return nil
 		}
-		svc, index := p.svc, st.ID().Index()
+		uc, index := p.uc, st.ID().Index()
 		return audioMutate(func(ctx context.Context) error {
-			_, err := svc.ToggleStreamMuted(ctx, index)
+			_, err := uc.ToggleStreamMuted.Execute(ctx, sound.ToggleStreamMutedCommand{Index: index})
 			return err
 		})
 	}
@@ -333,9 +412,9 @@ func (p *Audio) toggleMute() tea.Cmd {
 		return nil
 	}
 
-	svc, id := p.svc, d.ID().String()
+	uc, id := p.uc, d.ID().String()
 	return audioMutate(func(ctx context.Context) error {
-		_, err := svc.ToggleMuted(ctx, id)
+		_, err := uc.ToggleMuted.Execute(ctx, sound.ToggleMutedCommand{ID: id})
 		return err
 	})
 }
@@ -351,9 +430,9 @@ func (p *Audio) makeDefault() tea.Cmd {
 		return nil
 	}
 
-	svc, id := p.svc, d.ID().String()
+	uc, id := p.uc, d.ID().String()
 	return audioMutate(func(ctx context.Context) error {
-		_, err := svc.MakeDefault(ctx, id)
+		_, err := uc.MakeDefault.Execute(ctx, sound.MakeDefaultCommand{ID: id})
 		return err
 	})
 }
@@ -366,26 +445,56 @@ func (p *Audio) View(t styles.Theme, width, height int) string {
 		return ""
 	}
 
+	// One gutter on the right holds the body's single scrollbar; the sections
+	// lay out against what is left.
+	const scrollGutter = 2
+	content := max(inner-scrollGutter, 1)
+
 	tail := []string{}
 	if p.failure != "" {
 		tail = append(tail, "", t.Body.Danger.Render(fit(p.failure, inner)))
 	}
 	tail = append(tail, "", fit(p.hint(t), inner))
 
-	// The sections split the remaining height. The dividers go between them,
-	// so they are one row fewer than sections, plus their blank line.
-	dividers := (len(sections) - 1) * 2
-	available := height - frameChrome - len(tail) - len(sections)*audioui.Chrome - dividers
-	listHeight := max(1, available/len(sections))
-
-	rows := make([]string, 0, height)
+	// Every section renders in full; the page stacks them and scrolls the whole
+	// body as one, rather than each list windowing on its own.
+	body := make([]string, 0, 2*height)
+	headRow, cursorRow := 0, 0
 	for i, s := range sections {
 		if i > 0 {
-			// Never after the last one: there the blank before the footer
-			// already separates it.
-			rows = append(rows, ui.HDivider(t, inner), "")
+			// A rule and its blank line separate one section from the next.
+			body = append(body, ui.HDivider(t, content), "")
 		}
-		rows = append(rows, p.section(t, s).Render(t, inner, listHeight)...)
+		if s == p.focused {
+			// headRow is the section title; the selected row sits one past it.
+			headRow = len(body)
+			cursorRow = headRow + 1 + p.list(s).Cursor()
+		}
+		body = append(body, p.section(t, s).Render(t, content)...)
+	}
+	// Short rows (headings, blanks) must reach the gutter or the scrollbar
+	// would float mid-line next to them.
+	for i := range body {
+		body[i] = pad(body[i], content)
+	}
+
+	// The window is what is left under the frame once the tail is set aside;
+	// the tail stays pinned to the bottom.
+	viewport := max(height-frameChrome-len(tail), 1)
+	p.bodyOffset = ui.ScrollOffset(p.bodyOffset, cursorRow, len(body), viewport)
+	// Pull the focused section's title back into the window when everything from
+	// the title down to the cursor still fits: ScrollOffset alone lets the title
+	// hide one row above the top after you scroll down into the section and back
+	// up, so it reads as if the titles were pinned outside the scroll.
+	if headRow < p.bodyOffset && cursorRow-headRow < viewport {
+		p.bodyOffset = headRow
+	}
+	bar := ui.Scrollbar(t, len(body), p.bodyOffset, viewport)
+
+	end := min(p.bodyOffset+viewport, len(body))
+	rows := ui.JoinScrollbar(body[p.bodyOffset:end], bar)
+	for len(rows) < viewport {
+		rows = append(rows, "")
 	}
 	rows = append(rows, tail...)
 

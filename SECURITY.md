@@ -18,6 +18,6 @@ released and the report credited unless you prefer otherwise.
 
 ## Scope notes
 
-`settings` runs with the invoking user's privileges and talks to the session
-D-Bus (BlueZ) and the PulseAudio/PipeWire socket. It needs no elevated
-privileges; a report that depends on running it as root is out of scope.
+`settings` runs with the invoking user's privileges and talks to the
+PulseAudio/PipeWire socket. It needs no elevated privileges; a report that
+depends on running it as root is out of scope.
