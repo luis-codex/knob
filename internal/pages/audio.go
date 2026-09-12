@@ -69,6 +69,8 @@ type Audio struct {
 	// step is how much a left/right press moves the volume, from the user's
 	// settings.
 	step int
+	// animate gates the playing-stream blink; off means it never arms.
+	animate bool
 
 	outputs []audio.Device
 	inputs  []audio.Device
@@ -95,12 +97,13 @@ type Audio struct {
 	blinking bool
 }
 
-func NewAudio(ctx context.Context, title string, uc sound.UseCases, step int) *Audio {
+func NewAudio(ctx context.Context, title string, uc sound.UseCases, step int, animate bool) *Audio {
 	return &Audio{
-		title: title,
-		uc:    uc,
-		ctx:   ctx,
-		step:  step,
+		title:   title,
+		uc:      uc,
+		ctx:     ctx,
+		step:    step,
+		animate: animate,
 		lists: map[section]*components.List{
 			sectionOutputs: components.NewList(),
 			sectionInputs:  components.NewList(),
@@ -150,7 +153,7 @@ func blinkTick() tea.Cmd {
 // ensureBlink starts the blink if some stream is playing and it is not already
 // running. Without the guard, each reload would chain one more timer.
 func (p *Audio) ensureBlink() tea.Cmd {
-	if p.blinking || !p.anyStreamAudible() {
+	if !p.animate || p.blinking || !p.anyStreamAudible() {
 		return nil
 	}
 	p.blinking, p.blinkOn = true, true
@@ -266,6 +269,15 @@ func (p *Audio) HandleMsg(msg tea.Msg) tea.Cmd {
 
 	case audioFailedMsg:
 		p.failure = msg.err.Error()
+
+	case PreferencesSavedMsg:
+		p.step = msg.Settings.Audio.VolumeStep.Value()
+		p.animate = msg.Settings.Interface.Animations
+		if !p.animate {
+			p.blinking, p.blinkOn = false, false
+			return nil
+		}
+		return p.ensureBlink()
 	}
 	return nil
 }

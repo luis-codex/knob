@@ -2,12 +2,15 @@ package app
 
 import (
 	"context"
+	"image/color"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
 
+	"knob/internal/application/prefs"
 	"knob/internal/application/sound"
-	"knob/internal/shared/styles"
+	"knob/internal/domain/preferences"
+	"knob/internal/pages"
 	"knob/internal/shared/ui"
 )
 
@@ -17,7 +20,7 @@ var (
 )
 
 func testModel() Model {
-	return New(context.Background(), styles.Custom{}, sound.UseCases{}, 5)
+	return New(context.Background(), prefs.UseCases{}, preferences.Default(), sound.UseCases{})
 }
 
 func update(m Model, msg tea.Msg) Model {
@@ -28,7 +31,7 @@ func update(m Model, msg tea.Msg) Model {
 func TestSidebarToggle(t *testing.T) {
 	m := testModel()
 	if m.sidebarHidden {
-		t.Fatal("the sidebar starts visible")
+		t.Fatal("the default preference starts with the sidebar visible")
 	}
 
 	m = update(m, keyCtrlB)
@@ -74,6 +77,51 @@ func TestFooterAnnouncesTheToggle(t *testing.T) {
 	if got := m.keys(); !hasKey(got, "^b", "show menu") {
 		t.Errorf("hidden sidebar: footer = %+v, want a \"^b show menu\" hint", got)
 	}
+}
+
+// The sidebar's starting state comes from the stored preference, not always
+// visible.
+func TestSidebarHiddenStartsFromPreference(t *testing.T) {
+	initial := preferences.Default()
+	initial.Interface.SidebarHidden = true
+
+	m := New(context.Background(), prefs.UseCases{}, initial, sound.UseCases{})
+	if !m.sidebarHidden {
+		t.Error("sidebarHidden must start true when the preference says so")
+	}
+}
+
+// An explicit mode overrides whatever the terminal reports, and does so
+// immediately -- no restart needed.
+func TestThemeModeOverridesDetectedBackground(t *testing.T) {
+	initial := preferences.Default()
+	initial.Theme.Mode, _ = preferences.NewMode(preferences.ModeDark)
+
+	m := testModelWith(initial)
+	m = update(m, tea.BackgroundColorMsg{Color: color.White}) // a light terminal
+
+	if !m.isDark() {
+		t.Error("an explicit dark mode must win over a light terminal")
+	}
+}
+
+// Saving a preference recolors the running app immediately, not just on the
+// next start.
+func TestPreferencesSavedMsgRecolorsImmediately(t *testing.T) {
+	m := testModel()
+
+	dark, _ := preferences.NewMode(preferences.ModeDark)
+	next := preferences.Default()
+	next.Theme.Mode = dark
+
+	m = update(m, pages.PreferencesSavedMsg{Settings: next})
+	if !m.mode.IsDark() {
+		t.Errorf("mode = %q, want dark", m.mode.String())
+	}
+}
+
+func testModelWith(s preferences.Settings) Model {
+	return New(context.Background(), prefs.UseCases{}, s, sound.UseCases{})
 }
 
 func hasKey(keys []ui.Key, name, action string) bool {

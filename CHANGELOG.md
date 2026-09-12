@@ -10,6 +10,12 @@ may change between minor releases.
 ## [Unreleased]
 
 ### Added
+- Preferences screen in the sidebar to edit and persist every stored setting
+  from the TUI: volume step, theme mode, animations, and whether the sidebar
+  starts hidden. Every change saves immediately.
+- `theme.mode` (`auto` | `light` | `dark`): overrides the terminal's own
+  background detection, which previously had no way to be overridden and
+  stayed dark forever if the terminal never answered the query.
 - `Ctrl-B` hides or shows the sidebar, giving the body the full width. The
   footer advertises it and any move back to the menu restores it.
 - Behavioural settings in `$XDG_CONFIG_HOME/knob/config.toml`: `[audio]
@@ -31,6 +37,17 @@ may change between minor releases.
   README's install section trimmed to point at it.
 
 ### Changed
+- Theme and behavioural settings are now one file, `~/.config/knob/config.toml`,
+  replacing the separate `theme.toml` + `config.toml`. knob owns the file now:
+  it is created with every key at its default on first run, and rewritten
+  whenever a preference is saved from the TUI. Hand-editing still works —
+  the same tolerate-and-report rule applies — but comments do not survive a
+  save made from the app.
+- The store sits behind a domain repository port
+  (`internal/domain/preferences`), implemented by a TOML adapter
+  (`internal/infrastructure/tomlstore`) that replaces
+  `internal/infrastructure/config`. A future storage backend is a new adapter
+  plus a composition-root change, not a rewrite.
 - Renamed the project and binary to **`knob`** (module `knob`, command `knob`,
   config directory `~/.config/knob/`).
 - All code comments, doc strings and user-facing text translated to English.
@@ -38,6 +55,9 @@ may change between minor releases.
   `CGO_ENABLED=0`; added `test`, `vet`, `lint`, `check` and `snapshot` targets.
 
 ### Removed
+- `-write-theme` flag and the `make theme` target: there is no commented
+  template anymore now that the file is app-written; every key already
+  appears in it at its default after the first run.
 - Bluetooth support: domain, application use cases, BlueZ/memory/simulated
   infrastructure, UI and screen. Dropped entirely, no replacement.
 - Dead helpers in `internal/pages` (unused text/column helpers) flagged by

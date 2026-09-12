@@ -33,14 +33,13 @@ Native packages (`.deb`, `.rpm`, Arch `.pkg.tar.zst`), tarballs, `KNOB_VERSION` 
 `BINDIR` overrides, and building from source: **[INSTALL.md](INSTALL.md)**.
 
 To remove: your package manager (`pacman -R knob`, `apt remove knob`, …), or
-`rm` the binary. The theme at `~/.config/knob/` is left in place — delete it
+`rm` the binary. The config at `~/.config/knob/` is left in place — delete it
 with `rm -rf ~/.config/knob`.
 
 ## Usage
 
 ```
 knob              open the settings
-knob -write-theme  drop an example theme in ~/.config/knob/
 knob -version     print version, commit and build date
 knob -h           full help
 ```
@@ -60,22 +59,40 @@ Each screen shows its own extra keys in the footer.
 
 ### Configuration
 
-`knob` reads an optional theme from `$XDG_CONFIG_HOME/knob/theme.toml` (usually
-`~/.config/knob/theme.toml`). Run `knob -write-theme` to drop a commented
-template with every color and its default; uncomment only what you want to
-change. An invalid theme never blocks startup — bad values are reported on
-stderr and the defaults are used.
-
-Behavioural settings live in `$XDG_CONFIG_HOME/knob/config.toml`, all optional:
+`knob` keeps every preference — audio, theme and interface — in one file,
+`$XDG_CONFIG_HOME/knob/config.toml` (usually `~/.config/knob/config.toml`).
+knob owns it: it is created with every key at its default on first run, and
+edited from the Preferences screen in the TUI, which saves immediately.
 
 ```toml
 [audio]
-volume_step = 5      # how much a left/right press moves the volume (1–50)
+volume_step = 5        # how much a left/right press moves the volume (1–50)
+
+[theme]
+mode = "auto"           # auto | light | dark
+
+[theme.dark]
+accent = "#516BEB"      # every color role, per variant; unset means "use the default"
+# ...
+
+[theme.light]
+# ...
+
+[interface]
+sidebar_hidden = false  # start with the sidebar collapsed
+animations     = true   # the playing-stream blink, and anything added later
 ```
 
-Same rule as the theme: a missing file is a normal first run, a malformed file
-falls back to the defaults, and an out-of-range value keeps that field's
-default. Anything wrong is reported on stderr, naming the key.
+You can still hand-edit it: a missing key keeps its default, an out-of-range
+or malformed value falls back to its default and is reported on stderr naming
+the key, and a whole-file syntax error is reported and knob starts on the
+defaults. The one thing hand-editing does not survive is comments, or a
+rejected value itself — knob rewrites the file on every change made from the
+TUI, so annotations and typoed values you haven't fixed yet are both lost at
+the next save.
+
+> Older versions kept the theme in a separate, read-only `theme.toml`. Delete
+> it after upgrading; knob no longer reads it.
 
 ### Exit codes
 

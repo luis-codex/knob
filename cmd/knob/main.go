@@ -4,19 +4,18 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
-	"io/fs"
 	"os"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 
 	"knob/internal/app"
+	"knob/internal/application/prefs"
 	"knob/internal/application/sound"
-	"knob/internal/infrastructure/config"
 	"knob/internal/infrastructure/pulse"
+	"knob/internal/infrastructure/tomlstore"
 )
 
 // Exit codes. A script wrapping knob can branch on them; they are
@@ -43,17 +42,11 @@ var (
 
 func main() {
 	flag.Usage = usage
-	writeTheme := flag.Bool("write-theme", false, "write an example theme to the config directory and exit")
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 
 	if *showVersion {
 		fmt.Printf("knob %s (commit %s, %s)\n", version, commit, date)
-		return
-	}
-
-	if *writeTheme {
-		writeExampleTheme()
 		return
 	}
 
@@ -64,18 +57,16 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// A broken theme must not stop startup: it is reported and we carry on
-	// with the default colors.
-	theme, themeErrs := config.LoadTheme()
-	for _, err := range themeErrs {
-		fmt.Fprintln(os.Stderr, "theme:", err)
-	}
+	prefsUC := prefs.NewUseCases(prefs.Deps{Repo: tomlstore.NewRepository()})
 
-	// Same rule for the behavioural settings: a bad value is reported and its
-	// field stays at the default.
-	settings, settingsErrs := config.LoadSettings()
-	for _, err := range settingsErrs {
+	// A store that does not parse, or a value it rejects, must not stop
+	// startup: both are reported and knob carries on with the defaults.
+	loaded, err := prefsUC.Load.Execute(ctx, prefs.LoadCommand{})
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "config:", err)
+	}
+	for _, r := range loaded.Rejected {
+		fmt.Fprintf(os.Stderr, "config: %s: %s\n", r.Key, r.Reason)
 	}
 
 	soundUC := sound.NewUseCases(sound.Deps{
@@ -84,7 +75,7 @@ func main() {
 		Watcher: pulse.NewWatcher(),
 	})
 
-	if _, err := tea.NewProgram(app.New(ctx, theme, soundUC, settings.VolumeStep)).Run(); err != nil {
+	if _, err := tea.NewProgram(app.New(ctx, prefsUC, loaded.Settings, soundUC)).Run(); err != nil {
 		// The most common startup failure is having no interactive terminal
 		// (a pipe, CI, cron). Explain it instead of dumping the raw library
 		// error.
@@ -116,7 +107,6 @@ With no flags it opens the interface. It needs an interactive terminal.
 
 Examples:
   knob                     open the settings
-  knob -write-theme        drop an example theme in ~/.config/knob/
   knob -version            print the version
 
 Issues and questions:
@@ -125,18 +115,4 @@ Issues and questions:
 Flags:
 `)
 	flag.PrintDefaults()
-}
-
-// writeExampleTheme leaves the theme template in place and reports where.
-func writeExampleTheme() {
-	path, err := config.WriteExampleTheme()
-	switch {
-	case errors.Is(err, fs.ErrExist):
-		fmt.Fprintf(os.Stderr, "a theme already exists at %s; leaving it untouched\n", path)
-		os.Exit(1)
-	case err != nil:
-		fmt.Fprintln(os.Stderr, "could not write the theme:", err)
-		os.Exit(1)
-	}
-	fmt.Println("example theme written to", path)
 }

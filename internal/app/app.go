@@ -7,7 +7,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"knob/internal/application/prefs"
 	"knob/internal/application/sound"
+	"knob/internal/domain/preferences"
 	"knob/internal/pages"
 	"knob/internal/shared/components"
 	"knob/internal/shared/icons"
@@ -53,14 +55,21 @@ type Model struct {
 	// kept because the theme is rebuilt once the background is known to be
 	// light or dark.
 	palette styles.Custom
-	layout  layouts.App
-	nav     components.Nav
-	router  map[string]layouts.Section
+	// mode is the stored theme preference: auto defers to detectedDark,
+	// light/dark override it. Both are needed because the terminal's answer
+	// can arrive, or change, independently of a preference edit.
+	mode         preferences.Mode
+	detectedDark bool
+
+	layout layouts.App
+	nav    components.Nav
+	router map[string]layouts.Section
 	// fallback avoids the layout's nil deref on an unknown ID.
 	fallback layouts.Section
 	focus    focus
 	// sidebarHidden collapses the menu so the body gets the full width. Ctrl-B
-	// toggles it; any move back to the menu restores it.
+	// toggles it; any move back to the menu restores it. Its starting value
+	// comes from the stored preference; the toggle itself is not persisted.
 	sidebarHidden bool
 
 	width  int
@@ -68,18 +77,28 @@ type Model struct {
 }
 
 // New takes the wiring already done: the context that bounds the processes
-// listening to the system, the user's palette, the use cases and the
-// preferences read from config.toml. All of that is decided by the composition
-// root, not the interface.
-func New(ctx context.Context, custom styles.Custom, soundUC sound.UseCases, volumeStep int) Model {
+// listening to the system, the use cases and the preferences read from
+// config.toml. All of that is decided by the composition root, not the
+// interface.
+func New(ctx context.Context, prefsUC prefs.UseCases, initial preferences.Settings, soundUC sound.UseCases) Model {
+	palette := styles.FromPreferences(initial.Theme)
+	mode := initial.Theme.Mode
+	detectedDark := true // provisional until the BackgroundColorMsg
+
 	return Model{
-		palette:  custom,
-		theme:    styles.NewWithPalette(true, custom.For(true)), // provisional until the BackgroundColorMsg
-		nav:      components.NewNav(navGroups()...),
-		router:   newRouter(ctx, soundUC, volumeStep),
-		fallback: pages.NewFallback("Settings"),
+		palette:       palette,
+		mode:          mode,
+		detectedDark:  detectedDark,
+		theme:         styles.NewWithPalette(mode.Resolve(detectedDark), palette.For(mode.Resolve(detectedDark))),
+		nav:           components.NewNav(navGroups()...),
+		router:        newRouter(ctx, soundUC, prefsUC, initial),
+		fallback:      pages.NewFallback("Settings"),
+		sidebarHidden: initial.Interface.SidebarHidden,
 	}
 }
+
+// isDark resolves the stored mode against the terminal's own background.
+func (m Model) isDark() bool { return m.mode.Resolve(m.detectedDark) }
 
 func (m Model) Init() tea.Cmd {
 	// RequestBackgroundColor picks the palette; each page loads its own thing.
@@ -99,11 +118,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.BackgroundColorMsg:
-		m.theme = styles.NewWithPalette(msg.IsDark(), m.palette.For(msg.IsDark()))
+		m.detectedDark = msg.IsDark()
+		m.theme = styles.NewWithPalette(m.isDark(), m.palette.For(m.isDark()))
 		return m, nil
 
 	case tea.KeyPressMsg:
 		return m.handleKey(msg)
+
+	case pages.PreferencesSavedMsg:
+		// Recolor immediately: a theme-mode change must not wait for a
+		// restart. The message still falls through to broadcast below, so
+		// the audio page also picks up its own changed fields (volume step,
+		// animations).
+		m.mode = msg.Settings.Theme.Mode
+		m.palette = styles.FromPreferences(msg.Settings.Theme)
+		m.theme = styles.NewWithPalette(m.isDark(), m.palette.For(m.isDark()))
 	}
 
 	return m, m.broadcast(msg)

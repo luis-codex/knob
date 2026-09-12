@@ -37,8 +37,7 @@ Hexagonal / ports-and-adapters, one direction of dependency:
 internal/
   domain/          entities and invariants; ports (interfaces). No I/O.
   application/     use cases; orchestrate the domain through the ports.
-  infrastructure/  everything that does I/O: port adapters (pulse) and the
-                   config reader (config/).
+  infrastructure/  everything that does I/O: port adapters (pulse, tomlstore).
   app/, pages/, shared/, ui/   the Bubble Tea model, screens and widgets.
 cmd/knob/      composition root: wires concrete adapters to use cases.
 ```
