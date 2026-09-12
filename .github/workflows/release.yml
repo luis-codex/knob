@@ -1,5 +1,9 @@
 name: Release
 
+# Triggered by a human pushing a tag by hand — e.g. cutting a stable release
+# or any version that isn't a plain beta bump. Routine beta bumps on every
+# merge to main are handled by `auto-release.yml` instead.
+
 on:
   push:
     tags:

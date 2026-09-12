@@ -1,0 +1,57 @@
+name: Auto Release
+
+# Runs after CI succeeds on main (i.e. right after a PR merges), bumps the
+# beta counter, and publishes a new release. Going to a stable v1.0.0 (or
+# any non -beta.N tag) is a deliberate decision — do that by pushing the tag
+# by hand, which still triggers `release.yml` unchanged.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0 # full history + tags, needed to find the latest one
+
+      - name: Compute next beta tag
+        id: next_tag
+        run: |
+          latest=$(git tag -l 'v*-beta.*' --sort=-v:refname | head -1)
+          if [ -z "$latest" ]; then
+            echo "No existing vX.Y.Z-beta.N tag found; refusing to guess the next version." >&2
+            echo "Push the next tag by hand once." >&2
+            exit 1
+          fi
+          n="${latest##*.}"
+          base="${latest%.*}"
+          echo "tag=${base}.$((n + 1))" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.next_tag.outputs.tag }}" -m "${{ steps.next_tag.outputs.tag }}"
+          git push origin "${{ steps.next_tag.outputs.tag }}"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
