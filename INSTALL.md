@@ -1,7 +1,6 @@
 # Installing knob
 
-knob is Linux-only (`x86_64` / `aarch64`) — it talks to bluez and
-PulseAudio / PipeWire.
+knob is Linux-only (`x86_64` / `aarch64`) — it talks to PulseAudio / PipeWire.
 
 ## Quick install (script)
 

@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 // writeSettings drops a config.toml in a temporary config directory.
@@ -41,9 +40,6 @@ func TestLoadSettingsFullFile(t *testing.T) {
 [audio]
 volume_step = 10
 
-[bluetooth]
-scan_seconds = 20
-
 # an unknown section must be ignored, not rejected
 [theme]
 mode = "dark"
@@ -55,9 +51,6 @@ mode = "dark"
 	}
 	if got.VolumeStep != 10 {
 		t.Errorf("VolumeStep = %d, want 10", got.VolumeStep)
-	}
-	if got.ScanDuration != 20*time.Second {
-		t.Errorf("ScanDuration = %s, want 20s", got.ScanDuration)
 	}
 }
 
@@ -74,18 +67,12 @@ volume_step = 15
 	if got.VolumeStep != 15 {
 		t.Errorf("VolumeStep = %d, want 15", got.VolumeStep)
 	}
-	if got.ScanDuration != DefaultSettings().ScanDuration {
-		t.Errorf("ScanDuration = %s, want the default %s", got.ScanDuration, DefaultSettings().ScanDuration)
-	}
 }
 
 func TestLoadSettingsBadValueKeepsThatFieldDefaultAndReportsIt(t *testing.T) {
 	writeSettings(t, `
 [audio]
 volume_step = 999
-
-[bluetooth]
-scan_seconds = 20
 `)
 
 	got, errs := LoadSettings()
@@ -97,9 +84,6 @@ scan_seconds = 20
 	}
 	if got.VolumeStep != DefaultSettings().VolumeStep {
 		t.Errorf("VolumeStep = %d, want the default %d kept", got.VolumeStep, DefaultSettings().VolumeStep)
-	}
-	if got.ScanDuration != 20*time.Second {
-		t.Errorf("ScanDuration = %s, want 20s: a bad key must not drop the good ones", got.ScanDuration)
 	}
 }
 

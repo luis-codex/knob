@@ -22,7 +22,6 @@ func (p WiFi) View(t styles.Theme, width, height int) string {
 	return frame(t, width, height, p.title,
 		t.Body.Note.Render(wifiNote),
 		"",
-		t.Body.Muted.Render("It will need an adapter against NetworkManager or iwd,"),
-		t.Body.Muted.Render("just as bluez is the one for Bluetooth."),
+		t.Body.Muted.Render("It will need an adapter against NetworkManager or iwd."),
 	)
 }

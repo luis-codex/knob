@@ -7,7 +7,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"knob/internal/application/devices"
 	"knob/internal/application/sound"
 	"knob/internal/pages"
 	"knob/internal/shared/components"
@@ -60,6 +59,9 @@ type Model struct {
 	// fallback avoids the layout's nil deref on an unknown ID.
 	fallback layouts.Section
 	focus    focus
+	// sidebarHidden collapses the menu so the body gets the full width. Ctrl-B
+	// toggles it; any move back to the menu restores it.
+	sidebarHidden bool
 
 	width  int
 	height int
@@ -69,12 +71,12 @@ type Model struct {
 // listening to the system, the user's palette, the use cases and the
 // preferences read from config.toml. All of that is decided by the composition
 // root, not the interface.
-func New(ctx context.Context, custom styles.Custom, deviceUC devices.UseCases, soundUC sound.UseCases, volumeStep int) Model {
+func New(ctx context.Context, custom styles.Custom, soundUC sound.UseCases, volumeStep int) Model {
 	return Model{
 		palette:  custom,
 		theme:    styles.NewWithPalette(true, custom.For(true)), // provisional until the BackgroundColorMsg
 		nav:      components.NewNav(navGroups()...),
-		router:   newRouter(ctx, deviceUC, soundUC, volumeStep),
+		router:   newRouter(ctx, soundUC, volumeStep),
 		fallback: pages.NewFallback("Settings"),
 	}
 }
@@ -126,6 +128,16 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
+	// ctrl+b toggles the menu whatever the focus. Hiding it hands focus to the
+	// body: there is nothing to steer in a menu that is not there.
+	if msg.String() == "ctrl+b" {
+		m.sidebarHidden = !m.sidebarHidden
+		if m.sidebarHidden {
+			m.focus = focusBody
+		}
+		return m, nil
+	}
+
 	if m.focus == focusBody {
 		return m.handleBodyKey(msg)
 	}
@@ -143,6 +155,8 @@ func (m Model) handleBodyKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	switch msg.String() {
 	case "esc", "tab", "left", "h":
+		// Going back to the menu brings it back if Ctrl-B had hidden it.
+		m.sidebarHidden = false
 		m.focus = focusSidebar
 	case "q":
 		return m, tea.Quit
@@ -187,7 +201,9 @@ func (m Model) View() tea.View {
 
 	l := m.layout
 	l.Header = components.NewHeader().WithSection(m.nav.Selected().Label)
-	l.Sidebar = m.nav.WithFocus(m.focus == focusSidebar)
+	if !m.sidebarHidden {
+		l.Sidebar = m.nav.WithFocus(m.focus == focusSidebar)
+	}
 	l.Body = page
 	if provider, ok := page.(overlayProvider); ok {
 		l.Overlay = provider.Overlay()
@@ -201,13 +217,23 @@ func (m Model) View() tea.View {
 // keys are the global hints. Inside a page only the exit is announced: the
 // rest of the keys are explained by the page itself.
 func (m Model) keys() []ui.Key {
+	sidebar := ui.Key{Name: "^b", Action: "hide menu"}
+	if m.sidebarHidden {
+		sidebar.Action = "show menu"
+	}
+
 	if m.focus == focusBody {
-		return []ui.Key{{Name: icons.Escape, Action: "back to the menu"}}
+		hints := []ui.Key{sidebar}
+		if !m.sidebarHidden {
+			hints = append(hints, ui.Key{Name: icons.Escape, Action: "back to the menu"})
+		}
+		return hints
 	}
 
 	return []ui.Key{
 		{Name: icons.UpDown, Action: "navigate"},
 		{Name: icons.Enter, Action: "enter"},
+		sidebar,
 		{Name: "q", Action: "quit"},
 	}
 }

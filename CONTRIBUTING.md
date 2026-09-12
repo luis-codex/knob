@@ -9,11 +9,7 @@ small fixes and feedback on the UX are all welcome.
 git clone https://github.com/luis-codex/knob
 cd knob
 make dev                                  # run the TUI from source
-go run ./cmd/knob -fake-bluetooth      # run with seeded fake devices
 ```
-
-`-fake-bluetooth` seeds example devices so you can work on the Bluetooth screen
-without hardware.
 
 ## Before opening a PR
 
@@ -41,8 +37,8 @@ Hexagonal / ports-and-adapters, one direction of dependency:
 internal/
   domain/          entities and invariants; ports (interfaces). No I/O.
   application/     use cases; orchestrate the domain through the ports.
-  infrastructure/  everything that does I/O: port adapters (bluez, pulse,
-                   memory, simulated) and the config reader (config/).
+  infrastructure/  everything that does I/O: port adapters (pulse) and the
+                   config reader (config/).
   app/, pages/, shared/, ui/   the Bubble Tea model, screens and widgets.
 cmd/knob/      composition root: wires concrete adapters to use cases.
 ```

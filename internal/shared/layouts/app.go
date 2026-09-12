@@ -31,7 +31,9 @@ const (
 //	│ footer                       │
 //	└──────────────────────────────┘
 type App struct {
-	Header  Section
+	Header Section
+	// Sidebar is optional: when nil the body takes the full width and there is
+	// no divider. The app drops it on request (Ctrl-B).
 	Sidebar Section
 	Body    Section
 	Footer  Section
@@ -53,21 +55,27 @@ func (a App) View(t styles.Theme, width, height int) string {
 
 	// Vertical: header + divider + center + divider + footer.
 	centerHeight := height - styles.HeaderHeight - styles.FooterHeight - 2*styles.DividerSize
-	// Horizontal: sidebar + divider + body.
-	sidebarWidth := styles.SidebarWidth
-	bodyWidth := width - sidebarWidth - styles.DividerSize
+
+	// Horizontal: an optional sidebar + divider, then the body with the rest.
+	bodyWidth := width
+	if a.Sidebar != nil {
+		bodyWidth = width - styles.SidebarWidth - styles.DividerSize
+	}
 
 	body := a.Body.View(t, bodyWidth, centerHeight)
 	if a.Overlay != nil {
 		body = ui.Overlay(body, bodyWidth, centerHeight, a.Overlay.View(t, bodyWidth, centerHeight))
 	}
 
-	center := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		a.Sidebar.View(t, sidebarWidth, centerHeight),
-		ui.VDivider(t, centerHeight),
-		body,
-	)
+	center := body
+	if a.Sidebar != nil {
+		center = lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			a.Sidebar.View(t, styles.SidebarWidth, centerHeight),
+			ui.VDivider(t, centerHeight),
+			body,
+		)
+	}
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,

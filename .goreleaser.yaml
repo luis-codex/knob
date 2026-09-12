@@ -23,7 +23,7 @@ builds:
       - -X main.commit={{ .Commit }}
       - -X main.date={{ .CommitDate }}
     mod_timestamp: "{{ .CommitTimestamp }}"
-    # settings talks to bluez and PulseAudio/PipeWire: it only makes sense on Linux.
+    # settings talks to PulseAudio/PipeWire: it only makes sense on Linux.
     goos:
       - linux
     goarch:
@@ -51,7 +51,7 @@ nfpms:
     vendor: Luis Tenorio
     homepage: https://github.com/luis-codex/knob
     maintainer: Luis Tenorio <luisprograming0@gmail.com>
-    description: System settings (audio, Bluetooth, network) in a TUI.
+    description: System settings (audio, network) in a TUI.
     license: GPL-3.0-or-later
     section: utils
     bindir: /usr/bin

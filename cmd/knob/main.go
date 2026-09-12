@@ -10,19 +10,13 @@ import (
 	"io/fs"
 	"os"
 	"strings"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 
 	"knob/internal/app"
-	"knob/internal/application/devices"
 	"knob/internal/application/sound"
-	"knob/internal/domain/bluetooth"
-	"knob/internal/infrastructure/bluez"
 	"knob/internal/infrastructure/config"
-	"knob/internal/infrastructure/memory"
 	"knob/internal/infrastructure/pulse"
-	simulatedbt "knob/internal/infrastructure/simulated"
 )
 
 // Exit codes. A script wrapping knob can branch on them; they are
@@ -49,7 +43,6 @@ var (
 
 func main() {
 	flag.Usage = usage
-	simulated := flag.Bool("fake-bluetooth", false, "use fake Bluetooth devices instead of the system ones (for development)")
 	writeTheme := flag.Bool("write-theme", false, "write an example theme to the config directory and exit")
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
@@ -85,23 +78,13 @@ func main() {
 		fmt.Fprintln(os.Stderr, "config:", err)
 	}
 
-	btDevices, btAdapters, btScanner := bluetoothPorts(*simulated, settings.ScanDuration)
-	if *simulated {
-		// The fake backend starts empty; load the example devices so the
-		// Bluetooth screen shows something without hardware.
-		if err := memory.SeedDevices(ctx, btDevices); err != nil {
-			fmt.Fprintln(os.Stderr, "seed:", err)
-		}
-	}
-
-	deviceUC := devices.NewUseCases(devices.Deps{Repo: btDevices, Adapters: btAdapters, Scanner: btScanner})
 	soundUC := sound.NewUseCases(sound.Deps{
 		Repo:    pulse.NewRepository(),
 		Streams: pulse.NewStreamRepository(),
 		Watcher: pulse.NewWatcher(),
 	})
 
-	if _, err := tea.NewProgram(app.New(ctx, theme, deviceUC, soundUC, settings.VolumeStep)).Run(); err != nil {
+	if _, err := tea.NewProgram(app.New(ctx, theme, soundUC, settings.VolumeStep)).Run(); err != nil {
 		// The most common startup failure is having no interactive terminal
 		// (a pipe, CI, cron). Explain it instead of dumping the raw library
 		// error.
@@ -124,7 +107,7 @@ func isNoTTY(err error) bool {
 // usage explains what knob is and how to run it. The flag package appends the
 // list of flags below via PrintDefaults.
 func usage() {
-	_, _ = fmt.Fprint(flag.CommandLine.Output(), `knob — system settings (audio, Bluetooth, network) in a TUI.
+	_, _ = fmt.Fprint(flag.CommandLine.Output(), `knob — system settings (audio, network) in a TUI.
 
 Usage:
   knob [flags]
@@ -134,7 +117,6 @@ With no flags it opens the interface. It needs an interactive terminal.
 Examples:
   knob                     open the settings
   knob -write-theme        drop an example theme in ~/.config/knob/
-  knob -fake-bluetooth     use fake devices (development)
   knob -version            print the version
 
 Issues and questions:
@@ -143,19 +125,6 @@ Issues and questions:
 Flags:
 `)
 	flag.PrintDefaults()
-}
-
-// bluetoothPorts returns the three Bluetooth ports. scan is the discovery
-// window, from the user's settings.
-//
-// By default they are the system ones: a settings tool must show what is
-// really there. The fake ones sit behind a flag, for developing without
-// hardware; main seeds them with memory.SeedDevices.
-func bluetoothPorts(fake bool, scan time.Duration) (bluetooth.Repository, bluetooth.AdapterRepository, bluetooth.Scanner) {
-	if !fake {
-		return bluez.NewRepository(), bluez.NewAdapterRepository(), bluez.NewScanner(scan)
-	}
-	return memory.NewDeviceRepository(), memory.NewAdapterRepository(true), simulatedbt.NewScanner(scan)
 }
 
 // writeExampleTheme leaves the theme template in place and reports where.

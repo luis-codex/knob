@@ -10,10 +10,12 @@ may change between minor releases.
 ## [Unreleased]
 
 ### Added
+- `Ctrl-B` hides or shows the sidebar, giving the body the full width. The
+  footer advertises it and any move back to the menu restores it.
 - Behavioural settings in `$XDG_CONFIG_HOME/knob/config.toml`: `[audio]
-  volume_step` and `[bluetooth] scan_seconds`, both optional and range-checked.
-  A missing file or a bad value never blocks startup; the file is read at the
-  same point, and with the same tolerate-and-report rule, as the theme.
+  volume_step`, optional and range-checked. A missing file or a bad value
+  never blocks startup; the file is read at the same point, and with the same
+  tolerate-and-report rule, as the theme.
 - `--version` flag: prints version, commit and build date (injected at build
   time via `-ldflags`).
 - Descriptive `--help` output with a summary, examples and the issues link.
@@ -36,6 +38,8 @@ may change between minor releases.
   `CGO_ENABLED=0`; added `test`, `vet`, `lint`, `check` and `snapshot` targets.
 
 ### Removed
+- Bluetooth support: domain, application use cases, BlueZ/memory/simulated
+  infrastructure, UI and screen. Dropped entirely, no replacement.
 - Dead helpers in `internal/pages` (unused text/column helpers) flagged by
   `golangci-lint`.
 

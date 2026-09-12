@@ -1,11 +1,11 @@
 # knob
 
-System settings — audio, Bluetooth, network — in a terminal UI.
+System settings — audio, network — in a terminal UI.
 
 `knob` is a keyboard-driven TUI for Linux that shows and changes what your
 system is actually doing: output/input volume and devices via PulseAudio /
-PipeWire, Bluetooth devices via BlueZ, and (soon) network via NetworkManager or
-iwd. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and
+PipeWire, and (soon) network via NetworkManager or iwd. Built with
+[Bubble Tea](https://github.com/charmbracelet/bubbletea) and
 [Lip Gloss](https://github.com/charmbracelet/lipgloss).
 
 > **Status: beta.** It works day to day, but interfaces are not frozen yet — see
@@ -18,7 +18,6 @@ iwd. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and
 - Linux with an interactive terminal (true-color recommended; it degrades on
   poorer terminals).
 - **Audio:** a running PulseAudio or PipeWire (`pipewire-pulse`) session.
-- **Bluetooth:** BlueZ (`bluetoothd`) reachable on the session/system D-Bus.
 - No root required — it uses your session buses only.
 - To build from source: Go 1.27 or newer.
 
@@ -42,7 +41,6 @@ with `rm -rf ~/.config/knob`.
 ```
 knob              open the settings
 knob -write-theme  drop an example theme in ~/.config/knob/
-knob -fake-bluetooth  use fake devices (development, no hardware needed)
 knob -version     print version, commit and build date
 knob -h           full help
 ```
@@ -54,6 +52,7 @@ knob -h           full help
 | `↑`/`↓` or `k`/`j` | move within a list |
 | `→`/`l` or `Enter`/`Tab` | enter a section |
 | `←`/`h` or `Esc` | back to the menu |
+| `Ctrl-B` | hide or show the sidebar |
 | `q` | quit |
 | `Ctrl-C` | quit immediately (always) |
 
@@ -72,9 +71,6 @@ Behavioural settings live in `$XDG_CONFIG_HOME/knob/config.toml`, all optional:
 ```toml
 [audio]
 volume_step = 5      # how much a left/right press moves the volume (1–50)
-
-[bluetooth]
-scan_seconds = 8     # how long a device scan lasts (1–60)
 ```
 
 Same rule as the theme: a missing file is a normal first run, a malformed file
@@ -93,13 +89,10 @@ default. Anything wrong is reported on stderr, naming the key.
 
 ## Known limitations
 
-- **Bluetooth:** listing, pairing state and connect/disconnect work; accepting
-  an *incoming* pairing request is not implemented yet.
 - **Network / Wi-Fi:** the screen is a placeholder — it does not manage networks
   yet (needs a NetworkManager or iwd adapter). It is hidden from the menu for
   now.
-- Only tested against PulseAudio / PipeWire and BlueZ on `x86_64` Arch Linux so
-  far.
+- Only tested against PulseAudio / PipeWire on `x86_64` Arch Linux so far.
 
 ## Compatibility
 

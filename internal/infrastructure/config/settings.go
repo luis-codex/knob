@@ -5,22 +5,16 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"time"
 
 	"github.com/BurntSushi/toml"
 )
 
 // Settings bounds. A step below 1 makes the volume keys inert; above 50 a
-// single press swings across the range. A scan under a second gives nothing
-// time to answer; over a minute it outlives the user's attention.
+// single press swings across the range.
 const (
 	minVolumeStep     = 1
 	maxVolumeStep     = 50
 	defaultVolumeStep = 5
-
-	minScanSeconds     = 1
-	maxScanSeconds     = 60
-	defaultScanSeconds = 8
 )
 
 // Settings are the behavioural knobs read from config.toml, already resolved
@@ -28,16 +22,13 @@ const (
 type Settings struct {
 	// VolumeStep is how much a left/right press moves the volume, in percent.
 	VolumeStep int
-	// ScanDuration is how long a Bluetooth discovery lasts.
-	ScanDuration time.Duration
 }
 
 // DefaultSettings is what knob uses with no config.toml: the values it shipped
 // with before they were configurable.
 func DefaultSettings() Settings {
 	return Settings{
-		VolumeStep:   defaultVolumeStep,
-		ScanDuration: defaultScanSeconds * time.Second,
+		VolumeStep: defaultVolumeStep,
 	}
 }
 
@@ -47,9 +38,6 @@ type rawSettings struct {
 	Audio struct {
 		VolumeStep int `toml:"volume_step"`
 	} `toml:"audio"`
-	Bluetooth struct {
-		ScanSeconds int `toml:"scan_seconds"`
-	} `toml:"bluetooth"`
 }
 
 // LoadSettings reads the user's behavioural settings.
@@ -86,14 +74,6 @@ func LoadSettings() (Settings, []error) {
 			errs = append(errs, fmt.Errorf("[audio] volume_step: %d is not between %d and %d", v, minVolumeStep, maxVolumeStep))
 		} else {
 			out.VolumeStep = v
-		}
-	}
-
-	if s := parsed.Bluetooth.ScanSeconds; s != 0 {
-		if s < minScanSeconds || s > maxScanSeconds {
-			errs = append(errs, fmt.Errorf("[bluetooth] scan_seconds: %d is not between %d and %d", s, minScanSeconds, maxScanSeconds))
-		} else {
-			out.ScanDuration = time.Duration(s) * time.Second
 		}
 	}
 
