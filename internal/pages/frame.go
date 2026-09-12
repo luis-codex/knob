@@ -6,7 +6,6 @@
 package pages
 
 import (
-	"strconv"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -56,14 +55,4 @@ func pad(s string, width int) string {
 		return s + strings.Repeat(" ", gap)
 	}
 	return s
-}
-
-// --- text -----------------------------------------------------------------
-
-// plural formats a count with its noun.
-func plural(n int, one, many string) string {
-	if n == 1 {
-		return "1 " + one
-	}
-	return strconv.Itoa(n) + " " + many
 }

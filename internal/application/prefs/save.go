@@ -19,5 +19,5 @@ func (u Save) Execute(ctx context.Context, cmd SaveCommand) (SaveResponse, error
 	if err := u.deps.Repo.Save(ctx, cmd.Settings); err != nil {
 		return SaveResponse{}, err
 	}
-	return SaveResponse{Settings: cmd.Settings}, nil
+	return SaveResponse(cmd), nil
 }
